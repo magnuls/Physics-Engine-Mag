@@ -1,0 +1,4 @@
+# Inherited upstream engine code (tabs, Allman braces). Do NOT reformat.
+# Exempted from the repo-root .clang-format (which targets src/physics + tests).
+DisableFormat: true
+SortIncludes: false
