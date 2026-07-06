@@ -53,11 +53,19 @@ public:
 	inline const BaseLight& GetActiveLight()                           const { return *m_activeLight; }
 	inline unsigned int GetSamplerSlot(const std::string& samplerName) const { return m_samplerMap.find(samplerName)->second; }
 	inline const Matrix4f& GetLightMatrix()                            const { return m_lightMatrix; }
+
+	// BG-1: scene-configurable window background. RGB in [0,1]; alpha stays 1.0.
+	// Drives the per-frame scene clear (renderingEngine.cpp). Default black
+	// preserves the original look until a scene sets it.
+	inline void SetClearColor(const Vector3f& color)                         { m_clearColor = color; }
+	inline const Vector3f& GetClearColor()                             const { return m_clearColor; }
 protected:
 	inline void SetSamplerSlot(const std::string& name, unsigned int value) { m_samplerMap[name] = value; }
 private:
 	static const int NUM_SHADOW_MAPS = 10;
 	static const Matrix4f BIAS_MATRIX;
+
+	Vector3f m_clearColor = Vector3f(0.0f, 0.0f, 0.0f);  // BG-1 scene background
 
 	ProfileTimer                        m_renderProfileTimer;
 	ProfileTimer                        m_windowSyncProfileTimer;

@@ -85,6 +85,11 @@ void TestGame::Init(const Window& window) {
     // 1.0 — a per-scene dial, per Agent 0's design rule).
     engine.SetRestitution(0.3f);
 
+    // Let settled piles SLEEP (skip integrate+solve) so a big stack of resting
+    // balls stops costing solver time; contact or reset wakes them again
+    // (Agent 1's SLEEP-1). Agent 0 directive; engine default is off.
+    engine.SetSleepingEnabled(true);
+
     // Ground: static plane at y=0 + a big checker slab (top face at y=0).
     engine.AddObject(Physics::PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
     AddToScene((new Entity(Vector3f(0, -25, 0), Quaternion(0, 0, 0, 1), 25.0f))
@@ -172,6 +177,8 @@ int main() {
     Window window(1000, 600, "3D Engine Visual");
 
     RenderingEngine renderer(window);
+    // BG-1: a dark slate background so the sandbox isn't framed by a black void.
+    renderer.SetClearColor(Vector3f(0.06f, 0.07f, 0.09f));
 
     CoreEngine engine(60, &window, &renderer, &game);
     engine.Start();
