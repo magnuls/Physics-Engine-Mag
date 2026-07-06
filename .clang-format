@@ -1,0 +1,14 @@
+# Formatting config for THIS project's own code (src/physics/, tests/).
+# It codifies the style already present there: Google base, but 4-space indent,
+# 80-col, references/pointers bound to the type, namespace bodies not indented.
+#
+# The inherited upstream engine code (src/core/, src/rendering/, src/components/)
+# uses a different style (tabs, Allman braces) and is deliberately EXEMPTED via
+# a `DisableFormat: true` .clang-format in each of those directories — do not
+# reformat it.
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 80
+DerivePointerAlignment: false
+PointerAlignment: Left
+NamespaceIndentation: None
