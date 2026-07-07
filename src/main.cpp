@@ -59,6 +59,9 @@ void TestGame::Init(const Window& window) {
                 ToRadians(70.0f), window.GetAspect(), 0.1f, 1000.0f)))
             ->AddComponent(new FreeLook(window.GetCenter()))
             ->AddComponent(new FreeMove(10.0f));
+    // Aim the camera at the action on load (tilts down onto the set-pieces
+    // instead of staring at the horizon). FreeLook takes over on mouse movement.
+    cameraEntity->GetTransform()->LookAt(Vector3f(2, 3, 0), Vector3f(0, 1, 0));
     AddToScene(cameraEntity);
 
     // Point light overhead + a directional "sun" (Agent 0) so nothing is dark.
@@ -90,11 +93,43 @@ void TestGame::Init(const Window& window) {
     // (Agent 1's SLEEP-1). Agent 0 directive; engine default is off.
     engine.SetSleepingEnabled(true);
 
-    // Ground: static plane at y=0 + a big checker slab (top face at y=0).
+    // Ground: a static plane at y=0 for physics, plus an INFINITE-LOOKING visual
+    // floor. Instead of a finite cube slab (whose [0,1] UVs would smear the
+    // checker into one giant square when scaled up), build one huge quad with
+    // TILED UVs — the checker (GL_REPEAT by default) stays crisp near the action
+    // while the edges sit ~500 units out, past view. The quad is DOUBLE-WOUND
+    // (each triangle plus its reverse) with up-normals, so it renders correctly
+    // regardless of the engine's backface-cull winding.
     engine.AddObject(Physics::PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
-    AddToScene((new Entity(Vector3f(0, -25, 0), Quaternion(0, 0, 0, 1), 25.0f))
-                   ->AddComponent(
-                       new MeshRenderer(Mesh("cube.obj"), Material("checker"))));
+    {
+        const float S = 500.0f;       // half-size -> 1000x1000, edges past view
+        const float R = 250.0f;       // UV tiling -> ~4-unit checker squares
+        IndexedModel floor;
+        const Vector3f corners[4] = {Vector3f(-S, 0, -S), Vector3f(S, 0, -S),
+                                     Vector3f(-S, 0, S), Vector3f(S, 0, S)};
+        const Vector2f uvs[4] = {Vector2f(0, 0), Vector2f(R, 0), Vector2f(0, R),
+                                 Vector2f(R, R)};
+        for (int side = 0; side < 2; ++side) {  // two coincident, opposite windings
+            unsigned int base = side * 4;
+            for (int i = 0; i < 4; ++i) {
+                floor.AddVertex(corners[i]);
+                floor.AddTexCoord(uvs[i]);
+                floor.AddNormal(Vector3f(0, 1, 0));  // lit as up-facing either way
+            }
+            if (side == 0) {
+                floor.AddFace(base + 0, base + 1, base + 2);
+                floor.AddFace(base + 2, base + 1, base + 3);
+            } else {
+                floor.AddFace(base + 2, base + 1, base + 0);
+                floor.AddFace(base + 3, base + 1, base + 2);
+            }
+        }
+        floor.CalcTangents();
+        AddToScene((new Entity())
+                       ->AddComponent(new MeshRenderer(
+                           Mesh("infiniteFloor", floor.Finalize()),
+                           Material("checker"))));
+    }
 
     // Helpers: spawn a dynamic body + its rendered entity, wired by stable index,
     // with a per-body friction coefficient (default 0 = frictionless).
