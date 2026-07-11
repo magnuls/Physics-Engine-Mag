@@ -89,6 +89,10 @@ void TestGame::Init(const Window& window) {
     // (down from 0.3) so bodies stop bouncing sooner.
     engine.SetRestitution(0.2f);
 
+    // PHYS-FEEL: stronger-than-earth gravity so thrown/dropped bodies fall with
+    // weight instead of floating (user-confirmed the default -9.81 felt floaty).
+    engine.SetGravity(Vector3f(0, -15, 0));
+
     // Let settled piles SLEEP (skip integrate+solve) so a big stack of resting
     // balls stops costing solver time; contact or reset wakes them again
     // (Agent 1's SLEEP-1). Agent 0 directive; engine default is off.
