@@ -87,6 +87,13 @@ class BallSpawnerComponent : public EntityComponent {
         Physics::PhysicsObject ball =
             Physics::PhysicsObject::Sphere(pos, m_radius, velocity);
         ball.SetContinuous(true);
+        // PHYS-FEEL (Agent 2 cross-lane fix, user-authorized 2026-07-11): give
+        // spawned balls friction so they grip the floor and roll/settle instead
+        // of sliding forever. The solver combines friction as sqrt(fA*fB), so a
+        // friction-0 ball is frictionless against ANY surface — the ball must
+        // carry its own. Matches the demo floor/pre-placed-ball value.
+        // NOTE for Agent 3 (owner): a ctor param would let scenes tune this.
+        ball.SetFriction(0.6f);
         std::size_t index = m_engine->AddObject(ball);
 
         // Reuse the held mesh/material (ref-counted copies) — no per-spawn name
