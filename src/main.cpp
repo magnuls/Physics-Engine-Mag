@@ -84,9 +84,10 @@ void TestGame::Init(const Window& window) {
     AddToScene((new Entity())->AddComponent(physics));
     Physics::PhysicsEngine& engine = physics->GetPhysicsEngine();
 
-    // Partly-inelastic so drops lose energy and settle (engine default stays
-    // 1.0 — a per-scene dial, per Agent 0's design rule).
-    engine.SetRestitution(0.3f);
+    // Partly-inelastic so drops lose energy and settle quickly (engine default
+    // stays 1.0 — a per-scene dial, per Agent 0's design rule). PHYS-FEEL: 0.2
+    // (down from 0.3) so bodies stop bouncing sooner.
+    engine.SetRestitution(0.2f);
 
     // Let settled piles SLEEP (skip integrate+solve) so a big stack of resting
     // balls stops costing solver time; contact or reset wakes them again
@@ -100,7 +101,13 @@ void TestGame::Init(const Window& window) {
     // while the edges sit ~500 units out, past view. The quad is DOUBLE-WOUND
     // (each triangle plus its reverse) with up-normals, so it renders correctly
     // regardless of the engine's backface-cull winding.
-    engine.AddObject(Physics::PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
+    std::size_t floorIdx =
+        engine.AddObject(Physics::PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
+    // PHYS-FEEL: give the floor friction (same pattern as the ramp) so bodies
+    // grip and come to rest instead of sliding forever across a frictionless
+    // ground. Friction is per-body and combined at each contact, so the floor
+    // must have it too, not just the balls.
+    engine.GetObject(floorIdx).SetFriction(0.6f);
     {
         const float S = 500.0f;       // half-size -> 1000x1000, edges past view
         const float R = 250.0f;       // UV tiling -> ~4-unit checker squares
