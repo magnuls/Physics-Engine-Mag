@@ -15,16 +15,17 @@
 //   Simulate(dt)        -> integrate every body (semi-implicit Euler + gravity)
 //   HandleCollisions()  -> broad-phase cull, narrow-phase collision<>(), then a
 //                          SEQUENTIAL-IMPULSE contact solver: all contacts are
-//                          gathered first, warm-started from the previous step's
-//                          accumulated impulses, then iterated a few times so
-//                          simultaneous contacts (stacks!) converge together.
-//                          Each contact solves a normal impulse (accumulated,
-//                          clamped >= 0, with restitution) and a Coulomb
-//                          friction impulse (clamped to |Jt| <= mu * Jn),
-//                          followed by a Baumgarte positional-correction pass.
+//                          gathered first, warm-started from the previous
+//                          step's accumulated impulses, then iterated a few
+//                          times so simultaneous contacts (stacks!) converge
+//                          together. Each contact solves a normal impulse
+//                          (accumulated, clamped >= 0, with restitution) and a
+//                          Coulomb friction impulse (clamped to |Jt| <= mu *
+//                          Jn), followed by a Baumgarte positional-correction
+//                          pass.
 // It builds only on the existing detection layer (collision<A,B>(),
-// IntersectData.m_normal, Broadphase::sweepAndPrune) — it does not modify any of
-// it. See PhysicsEngineComponent for the Entity/Component bridge.
+// IntersectData.m_normal, Broadphase::sweepAndPrune) — it does not modify any
+// of it. See PhysicsEngineComponent for the Entity/Component bridge.
 namespace Physics {
 
 class PhysicsEngine {
@@ -86,15 +87,15 @@ class PhysicsEngine {
     // NEGATIVE (-gap/dt — the body may close at most the current gap in one
     // step) and it gets no friction, restitution, or positional correction.
     struct Contact {
-        std::size_t ia, ib;         // body indices, normal points ia -> ib
-        Vector3f n, t1, t2;         // unit normal + orthonormal tangent basis
-        Vector3f rA, rB;            // contact lever arms from each center
-        float normalMass{0};        // effective mass along n
+        std::size_t ia, ib;   // body indices, normal points ia -> ib
+        Vector3f n, t1, t2;   // unit normal + orthonormal tangent basis
+        Vector3f rA, rB;      // contact lever arms from each center
+        float normalMass{0};  // effective mass along n
         float tangentMass1{0}, tangentMass2{0};
-        float targetVn{0};          // desired post-solve normal velocity
+        float targetVn{0};  // desired post-solve normal velocity
         float penetration{0};
-        float friction{0};          // combined pair coefficient
-        bool speculative{false};    // CCD contact on a not-yet-touching pair
+        float friction{0};        // combined pair coefficient
+        bool speculative{false};  // CCD contact on a not-yet-touching pair
         float Pn{0}, Pt1{0}, Pt2{0};
     };
 
@@ -132,7 +133,7 @@ class PhysicsEngine {
     Vector3f m_gravity{0.0f, -9.81f, 0.0f};
     float m_restitution{1.0f};
     float m_ccdSpeedThreshold{std::numeric_limits<float>::infinity()};
-    bool m_sleepingEnabled{false};       // SLEEP-1 master switch, default OFF
+    bool m_sleepingEnabled{false};         // SLEEP-1 master switch, default OFF
     float m_sleepLinearThreshold{0.05f};   // units/s
     float m_sleepAngularThreshold{0.05f};  // rad/s
     float m_timeToSleep{0.5f};             // seconds of rest before sleeping

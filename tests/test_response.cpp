@@ -39,21 +39,23 @@ TEST(ResponseTest, RestitutionHalfBounce) {
 // it does not move, and the light body carries all the rebound.
 TEST(ResponseTest, InfiniteMassActsLikeWall) {
     PhysicsEngine engine;  // default restitution 1.0
-    engine.AddObject(PhysicsObject::Sphere(Vector3f(0, 0, 0), 1.0f,
-                                           Vector3f(0, 0, 0), /*invMass=*/0.0f));
-    engine.AddObject(PhysicsObject::Sphere(Vector3f(1.5f, 0, 0), 1.0f,
-                                           Vector3f(-4, 0, 0), /*invMass=*/1.0f));
+    engine.AddObject(PhysicsObject::Sphere(
+        Vector3f(0, 0, 0), 1.0f, Vector3f(0, 0, 0), /*invMass=*/0.0f));
+    engine.AddObject(PhysicsObject::Sphere(
+        Vector3f(1.5f, 0, 0), 1.0f, Vector3f(-4, 0, 0), /*invMass=*/1.0f));
 
     engine.HandleCollisions();
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 0.0f, 1e-4f);  // wall
-    EXPECT_NEAR(engine.GetObject(1).GetVelocity().GetX(), 4.0f, 1e-3f);  // rebounds
+    EXPECT_NEAR(engine.GetObject(1).GetVelocity().GetX(), 4.0f,
+                1e-3f);  // rebounds
 }
 
-// Positional correction pushes an overlapping body out along the contact normal.
+// Positional correction pushes an overlapping body out along the contact
+// normal.
 TEST(ResponseTest, PositionalCorrectionReducesPenetration) {
     PhysicsEngine engine;
-    engine.AddObject(
-        PhysicsObject::Sphere(Vector3f(0, 0.5f, 0), 1.0f));  // sunk 0.5 into floor
+    engine.AddObject(PhysicsObject::Sphere(Vector3f(0, 0.5f, 0),
+                                           1.0f));  // sunk 0.5 into floor
     engine.AddObject(PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
 
     float before = engine.GetObject(0).GetPosition().GetY();
@@ -81,7 +83,7 @@ TEST(ResponseTest, BallSettlesOnFloorUnderGravity) {
 
     float y = engine.GetObject(0).GetPosition().GetY();
     float vy = engine.GetObject(0).GetVelocity().GetY();
-    EXPECT_NEAR(y, 1.0f, 0.15f);          // resting ~radius above the plane
-    EXPECT_LT(std::fabs(vy), 0.5f);        // essentially at rest (not bouncing)
-    EXPECT_GT(y, 0.0f);                     // did NOT sink through the floor
+    EXPECT_NEAR(y, 1.0f, 0.15f);     // resting ~radius above the plane
+    EXPECT_LT(std::fabs(vy), 0.5f);  // essentially at rest (not bouncing)
+    EXPECT_GT(y, 0.0f);              // did NOT sink through the floor
 }

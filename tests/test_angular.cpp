@@ -26,8 +26,9 @@ TEST(AngularTest, OrientationIntegratesFromAngularVelocity) {
     EXPECT_NEAR(right.GetZ(), 0.0f, 0.02f);
 }
 
-// An impulse through the center of mass imparts NO spin; an off-centre one does.
-// (Contact point comes from collision<OBB,OBB>() = midpoint of the two centers.)
+// An impulse through the center of mass imparts NO spin; an off-centre one
+// does. (Contact point comes from collision<OBB,OBB>() = midpoint of the two
+// centers.)
 TEST(AngularTest, OffCenterCollisionInducesSpin) {
     // Centered: falling box directly above the static box -> lever arm parallel
     // to the normal -> no torque.
@@ -54,17 +55,17 @@ TEST(AngularTest, OffCenterCollisionInducesSpin) {
             Vector3f(0, 0, 0), /*invMass=*/0.0f));
         engine.HandleCollisions();
         Vector3f w = engine.GetObject(0).GetAngularVelocity();
-        EXPECT_GT(w.Length(), 0.5f);            // spin was induced
-        EXPECT_GT(std::fabs(w.GetZ()), 0.5f);   // about z (in-plane offset)
+        EXPECT_GT(w.Length(), 0.5f);           // spin was induced
+        EXPECT_GT(std::fabs(w.GetZ()), 0.5f);  // about z (in-plane offset)
     }
 }
 
 // A static body absorbs the collision but never rotates.
 TEST(AngularTest, StaticBodyStaysUnrotated) {
     PhysicsEngine engine;
-    engine.AddObject(PhysicsObject::OrientedBox(
-        Vector3f(0, 1.5f, 0), Vector3f(1, 1, 1), Quaternion(0, 0, 0, 1),
-        Vector3f(0, -4, 0)));
+    engine.AddObject(
+        PhysicsObject::OrientedBox(Vector3f(0, 1.5f, 0), Vector3f(1, 1, 1),
+                                   Quaternion(0, 0, 0, 1), Vector3f(0, -4, 0)));
     engine.AddObject(PhysicsObject::OrientedBox(
         Vector3f(1.0f, 0, 0), Vector3f(1, 1, 1), Quaternion(0, 0, 0, 1),
         Vector3f(0, 0, 0), /*invMass=*/0.0f));

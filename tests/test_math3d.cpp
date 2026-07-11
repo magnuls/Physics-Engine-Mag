@@ -26,7 +26,7 @@ void ExpectVec3(const Vector<float, 3>& v, float x, float y, float z,
 // ---------------------------------------------------------------------------
 TEST(Math3D_Vector3f, DotCrossLength) {
     Vector3f a(1, 2, 3), b(4, 5, 6);
-    EXPECT_NEAR(a.Dot(b), 32.0f, 1e-4f);          // 4 + 10 + 18
+    EXPECT_NEAR(a.Dot(b), 32.0f, 1e-4f);  // 4 + 10 + 18
     ExpectVec3(Vector3f(1, 0, 0).Cross(Vector3f(0, 1, 0)), 0, 0, 1);
     ExpectVec3(Vector3f(0, 1, 0).Cross(Vector3f(1, 0, 0)), 0, 0, -1);
     EXPECT_NEAR(Vector3f(3, 4, 0).Length(), 5.0f, 1e-4f);
@@ -74,7 +74,7 @@ TEST(Math3D_Vector3f, RotateAboutAxis) {
 // ---------------------------------------------------------------------------
 TEST(Math3D_Vector2f, DotCross) {
     Vector2f a(1, 2), b(3, 4);
-    EXPECT_NEAR(a.Dot(b), 11.0f, 1e-4f);           // 3 + 8
+    EXPECT_NEAR(a.Dot(b), 11.0f, 1e-4f);  // 3 + 8
     EXPECT_NEAR(Vector2f(1, 0).Cross(Vector2f(0, 1)), 1.0f, 1e-4f);
     EXPECT_NEAR(Vector2f(0, 1).Cross(Vector2f(1, 0)), -1.0f, 1e-4f);
 }

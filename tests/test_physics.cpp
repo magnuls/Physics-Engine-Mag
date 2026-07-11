@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <iomanip>
-
 #include <algorithm>
+#include <iomanip>
 #include <utility>
 #include <vector>
 
@@ -384,7 +383,7 @@ TEST(ContactManifold, AABBSphereFace) {
     BoundingSphere s(Vector3f(6, 2.5, 2.5), 1.5);
     IntersectData r{collision(box, s)};  // A=box, B=sphere
     EXPECT_TRUE(r.m_doesIntersect);
-    EXPECT_VEC_NEAR(r.m_normal, 1, 0, 0);         // box -> sphere
+    EXPECT_VEC_NEAR(r.m_normal, 1, 0, 0);  // box -> sphere
     EXPECT_VEC_NEAR(r.m_contactPoint, 5, 2.5, 2.5);
 
     IntersectData rs{collision(s, box)};  // A=sphere, B=box
@@ -405,11 +404,11 @@ TEST(ContactManifold, PlaneSphere) {
     BoundingSphere s(Vector3f(0, 0.5, 0), 1.0);  // partially through floor
     IntersectData sp{collision(s, floor)};       // A=sphere, B=plane
     EXPECT_TRUE(sp.m_doesIntersect);
-    EXPECT_VEC_NEAR(sp.m_normal, 0, -1, 0);        // sphere -> plane (down)
-    EXPECT_VEC_NEAR(sp.m_contactPoint, 0, 0, 0);   // projected onto plane
+    EXPECT_VEC_NEAR(sp.m_normal, 0, -1, 0);       // sphere -> plane (down)
+    EXPECT_VEC_NEAR(sp.m_contactPoint, 0, 0, 0);  // projected onto plane
 
     IntersectData ps{collision(floor, s)};  // A=plane, B=sphere
-    EXPECT_VEC_NEAR(ps.m_normal, 0, 1, 0);         // plane -> sphere (up)
+    EXPECT_VEC_NEAR(ps.m_normal, 0, 1, 0);  // plane -> sphere (up)
 }
 
 TEST(ContactManifold, PlaneAABB) {
@@ -424,7 +423,8 @@ TEST(ContactManifold, PlaneAABB) {
 
     IntersectData ap{collision(box, floor)};  // A=box, B=plane
     EXPECT_VEC_NEAR(ap.m_normal, 0, -1, 0);
-    EXPECT_VEC_NEAR(ap.m_contactPoint, 0, -1, 0);  // contact carries through swap
+    EXPECT_VEC_NEAR(ap.m_contactPoint, 0, -1,
+                    0);  // contact carries through swap
 }
 
 // A2 — the box-vs-plane contact point sits on the actual contact face, and its
@@ -448,12 +448,13 @@ TEST(ContactManifold, PlaneAABBSupportPoint) {
 TEST(ContactPoints, SupportHelpers) {
     AABB box(Vector3f(0, 0, 0), Vector3f(2, 4, 6));
     // Toward -y -> bottom face; x,z perpendicular -> face-centered.
-    EXPECT_VEC_NEAR(Physics::aabbSupportPoint(box, Vector3f(0, -1, 0)), 1, 0, 3);
+    EXPECT_VEC_NEAR(Physics::aabbSupportPoint(box, Vector3f(0, -1, 0)), 1, 0,
+                    3);
     // Diagonal dir -> the (max,max,max) corner.
     EXPECT_VEC_NEAR(Physics::aabbSupportPoint(box, Vector3f(1, 1, 1)), 2, 4, 6);
 
-    // Oriented box rotated 90deg about Y maps local +x onto world -z; asking for
-    // the support toward world +x picks the local axis now aligned with +x.
+    // Oriented box rotated 90deg about Y maps local +x onto world -z; asking
+    // for the support toward world +x picks the local axis now aligned with +x.
     const float s = std::sqrt(2.0f) / 2.0f;  // sin/cos of 45deg
     Quaternion yaw(Vector3f(0, 1, 0), ToRadians(90.0f));
     Vector3f ax = yaw.GetRight();    // local x in world
@@ -488,10 +489,10 @@ TEST(Broadphase, OverlapPredicate) {
 
 TEST(Broadphase, KnownPairs) {
     std::vector<AABB> boxes{
-        AABB(Vector3f(0, 0, 0), Vector3f(1, 1, 1)),          // 0
-        AABB(Vector3f(0.5, 0.5, 0.5), Vector3f(2, 2, 2)),    // 1 overlaps 0
-        AABB(Vector3f(5, 5, 5), Vector3f(6, 6, 6)),          // 2 isolated
-        AABB(Vector3f(1.5, 1.5, 1.5), Vector3f(3, 3, 3)),    // 3 overlaps 1
+        AABB(Vector3f(0, 0, 0), Vector3f(1, 1, 1)),        // 0
+        AABB(Vector3f(0.5, 0.5, 0.5), Vector3f(2, 2, 2)),  // 1 overlaps 0
+        AABB(Vector3f(5, 5, 5), Vector3f(6, 6, 6)),        // 2 isolated
+        AABB(Vector3f(1.5, 1.5, 1.5), Vector3f(3, 3, 3)),  // 3 overlaps 1
     };
     std::vector<std::pair<int, int>> expected{{0, 1}, {1, 3}};
     EXPECT_EQ(sortedPairs(Broadphase::sweepAndPrune(boxes)),
@@ -506,8 +507,9 @@ TEST(Broadphase, MatchesBruteForce) {
         float x = i * 0.5f;
         boxes.emplace_back(Vector3f(x, 0, 0), Vector3f(x + 1, 1, 1));
     }
-    // A box with a wide x-interval but disjoint on y: stays "active" through the
-    // whole sweep, so it stresses the 3-axis confirm (must match zero of them).
+    // A box with a wide x-interval but disjoint on y: stays "active" through
+    // the whole sweep, so it stresses the 3-axis confirm (must match zero of
+    // them).
     boxes.emplace_back(Vector3f(0, 10, 0), Vector3f(30, 11, 1));
     // A separate cluster far along x.
     boxes.emplace_back(Vector3f(100, 0, 0), Vector3f(101, 1, 1));

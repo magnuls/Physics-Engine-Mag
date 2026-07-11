@@ -9,9 +9,10 @@ using namespace Physics;
 
 // Agent 3 VERIFICATION suite for Fable 5's (Agent 1) friction + sequential-
 // impulse solver. Independent of tests/test_friction.cpp (Agent 1's own suite):
-// this targets solver-SAFETY invariants and the warm-start/restitution interplay
-// Agent 1 flagged for extra eyes. It only exercises the public API — it does not
-// modify physicsEngine.cpp. A failure here is escalated to Agent 0, not patched.
+// this targets solver-SAFETY invariants and the warm-start/restitution
+// interplay Agent 1 flagged for extra eyes. It only exercises the public API —
+// it does not modify physicsEngine.cpp. A failure here is escalated to Agent 0,
+// not patched.
 
 namespace {
 
@@ -86,9 +87,9 @@ TEST(FrictionVerify, RestitutionThresholdSettlesSlowContacts) {
     EXPECT_GT(fast.GetObject(0).GetVelocity().GetY(), 3.0f);  // ~+4 elastic
 }
 
-// STACK STABILITY: a resting box must neither sink through the floor (penetration
-// stays within the solver's slop) nor creep, over a long run. Tighter bounds
-// than Agent 1's TwoBoxStackSettles, checked at rest.
+// STACK STABILITY: a resting box must neither sink through the floor
+// (penetration stays within the solver's slop) nor creep, over a long run.
+// Tighter bounds than Agent 1's TwoBoxStackSettles, checked at rest.
 TEST(FrictionVerify, RestingBoxDoesNotSinkOrCreep) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -116,8 +117,8 @@ TEST(FrictionVerify, ThreeBoxStackSettles) {
     engine.SetRestitution(0.0f);
     for (int k = 0; k < 3; ++k) {
         float base = 0.05f + k * 2.05f;  // small gaps so they drop together
-        PhysicsObject b =
-            PhysicsObject::Box(Vector3f(-1, base, -1), Vector3f(1, base + 2, 1));
+        PhysicsObject b = PhysicsObject::Box(Vector3f(-1, base, -1),
+                                             Vector3f(1, base + 2, 1));
         b.SetFriction(0.6f);
         engine.AddObject(b);
     }
@@ -132,13 +133,14 @@ TEST(FrictionVerify, ThreeBoxStackSettles) {
             << "box " << i << " still moving";
 }
 
-// NO EXPLOSION: a messy overlapping pile with friction and restitution must stay
-// bounded — no NaN, no absurd velocities, nothing launched or tunnelled far
-// below the floor. This is the blunt "does the solver blow up" safety net.
+// NO EXPLOSION: a messy overlapping pile with friction and restitution must
+// stay bounded — no NaN, no absurd velocities, nothing launched or tunnelled
+// far below the floor. This is the blunt "does the solver blow up" safety net.
 TEST(FrictionVerify, OverlappingPileStaysBounded) {
     PhysicsEngine engine;
     engine.SetRestitution(0.3f);
-    // Deliberately overlapping spheres and boxes jammed together above the floor.
+    // Deliberately overlapping spheres and boxes jammed together above the
+    // floor.
     for (int k = 0; k < 5; ++k) {
         PhysicsObject s = PhysicsObject::Sphere(
             Vector3f(0.3f * k, 2.0f + 0.7f * k, 0.0f), 1.0f);
@@ -166,10 +168,10 @@ TEST(FrictionVerify, SolverIsDeterministic) {
     auto build = [](PhysicsEngine& e) {
         e.SetRestitution(0.3f);
         for (int k = 0; k < 4; ++k) {
-            PhysicsObject b = PhysicsObject::Box(
-                Vector3f(-1 + 0.1f * k, 0.5f + 2.1f * k, -1),
-                Vector3f(1 + 0.1f * k, 2.5f + 2.1f * k, 1),
-                Vector3f(0.5f * k, 0, 0));
+            PhysicsObject b =
+                PhysicsObject::Box(Vector3f(-1 + 0.1f * k, 0.5f + 2.1f * k, -1),
+                                   Vector3f(1 + 0.1f * k, 2.5f + 2.1f * k, 1),
+                                   Vector3f(0.5f * k, 0, 0));
             b.SetFriction(0.5f);
             e.AddObject(b);
         }

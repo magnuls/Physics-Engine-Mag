@@ -94,7 +94,7 @@ bool PhysicsEngine::BuildContact(std::size_t ia, std::size_t ib,
                                  Contact& c) const {
     const PhysicsObject& a = m_objects[ia];
     const PhysicsObject& b = m_objects[ib];
-    const Vector3f& n = d.m_normal;  // unit, points a -> b on a hit
+    const Vector3f& n = d.m_normal;       // unit, points a -> b on a hit
     if (n.Length() < 0.5f) return false;  // degenerate normal — skip
 
     c.ia = ia;
@@ -105,13 +105,14 @@ bool PhysicsEngine::BuildContact(std::size_t ia, std::size_t ib,
 
     // Orthonormal tangent basis, a deterministic function of n alone (so
     // warm-started tangent impulses land in the same directions next step).
-    Vector3f ref = std::abs(n.GetX()) < 0.9f ? Vector3f(1, 0, 0)
-                                             : Vector3f(0, 1, 0);
+    Vector3f ref =
+        std::abs(n.GetX()) < 0.9f ? Vector3f(1, 0, 0) : Vector3f(0, 1, 0);
     c.t1 = n.Cross(ref).Normalized();
     c.t2 = n.Cross(c.t1);
 
     // Effective mass along a direction dir:
-    //   k = invMassSum + dir . ( Iinv_a(rA x dir) x rA + Iinv_b(rB x dir) x rB )
+    //   k = invMassSum + dir . ( Iinv_a(rA x dir) x rA + Iinv_b(rB x dir) x rB
+    //   )
     const float invSum = a.GetInvMass() + b.GetInvMass();
     auto effectiveMass = [&](const Vector3f& dir) {
         Vector3f angA{a.ApplyInverseInertia(c.rA.Cross(dir)).Cross(c.rA)};
@@ -177,8 +178,8 @@ void PhysicsEngine::SolveVelocity(Contact& c) {
     // iterations may correct downward, which is what lets warm starting and
     // stacked contacts converge instead of over-pushing.
     {
-        float vn = (ContactVelocity(b, c.rB) - ContactVelocity(a, c.rA))
-                       .Dot(c.n);
+        float vn =
+            (ContactVelocity(b, c.rB) - ContactVelocity(a, c.rA)).Dot(c.n);
         float dPn = (c.targetVn - vn) * c.normalMass;
         float oldPn = c.Pn;
         c.Pn = std::max(oldPn + dPn, 0.0f);
@@ -195,8 +196,8 @@ void PhysicsEngine::SolveVelocity(Contact& c) {
         const float maxPt = c.friction * c.Pn;
         auto solveTangent = [&](const Vector3f& t, float tangentMass,
                                 float& Pt) {
-            float vt = (ContactVelocity(b, c.rB) - ContactVelocity(a, c.rA))
-                           .Dot(t);
+            float vt =
+                (ContactVelocity(b, c.rB) - ContactVelocity(a, c.rA)).Dot(t);
             float dPt = -vt * tangentMass;
             float oldPt = Pt;
             Pt = std::clamp(oldPt + dPt, -maxPt, maxPt);
@@ -254,13 +255,12 @@ void PhysicsEngine::WakeIslands(std::vector<Contact>& contacts) {
 
     // Fully-sleeping contacts (sleeping-sleeping or sleeping-static) are not
     // solved — that is the entire point of sleeping.
-    contacts.erase(
-        std::remove_if(contacts.begin(), contacts.end(),
-                       [&](const Contact& c) {
-                           return !m_objects[c.ia].m_awake &&
-                                  !m_objects[c.ib].m_awake;
-                       }),
-        contacts.end());
+    contacts.erase(std::remove_if(contacts.begin(), contacts.end(),
+                                  [&](const Contact& c) {
+                                      return !m_objects[c.ia].m_awake &&
+                                             !m_objects[c.ib].m_awake;
+                                  }),
+                   contacts.end());
 }
 
 void PhysicsEngine::SleepIslands(const std::vector<Contact>& contacts) {

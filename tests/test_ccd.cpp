@@ -20,11 +20,11 @@ constexpr float kDt = 1.0f / 60.0f;
 // clean over it.
 void buildTunnelScene(PhysicsEngine& engine) {
     engine.SetGravity(Vector3f(0, 0, 0));
-    engine.AddObject(PhysicsObject::Sphere(Vector3f(0, 0, 0), 0.5f,
-                                           Vector3f(200, 0, 0)));
+    engine.AddObject(
+        PhysicsObject::Sphere(Vector3f(0, 0, 0), 0.5f, Vector3f(200, 0, 0)));
     engine.AddObject(PhysicsObject::Box(Vector3f(4.8f, -3, -3),
-                                        Vector3f(5.2f, 3, 3),
-                                        Vector3f(0, 0, 0), /*invMass=*/0.0f));
+                                        Vector3f(5.2f, 3, 3), Vector3f(0, 0, 0),
+                                        /*invMass=*/0.0f));
 }
 
 void step(PhysicsEngine& engine, int n) {
@@ -44,7 +44,7 @@ TEST(CcdTest, FastSphereTunnelsWithoutCcd) {
 
     step(engine, 6);  // ~20 units of travel
 
-    EXPECT_GT(engine.GetObject(0).GetPosition().GetX(), 6.0f);   // past the wall
+    EXPECT_GT(engine.GetObject(0).GetPosition().GetX(), 6.0f);  // past the wall
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 200.0f, 1e-3f);
 }
 
@@ -86,8 +86,8 @@ TEST(CcdTest, SlowBodyUnaffectedByThreshold) {
     engine.AddObject(
         PhysicsObject::Sphere(Vector3f(0, 0, 0), 0.5f, Vector3f(2, 0, 0)));
     engine.AddObject(PhysicsObject::Box(Vector3f(4.8f, -3, -3),
-                                        Vector3f(5.2f, 3, 3),
-                                        Vector3f(0, 0, 0), /*invMass=*/0.0f));
+                                        Vector3f(5.2f, 3, 3), Vector3f(0, 0, 0),
+                                        /*invMass=*/0.0f));
 
     step(engine, 30);  // 0.5 s -> reaches x=1, still ~3.3 from the wall face
 
