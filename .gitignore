@@ -221,14 +221,18 @@ compile_commands.json
 .cache/
 
 #############
-## Agent coordination / meta docs (internal — NOT shipped project source)
+## Claude / AI-agent files — internal coordination, NEVER ship these
 #############
-# Working files for the parallel multi-agent workflow: the Agent 0 controller
-# board and the interface catalog agents build against. These are process
-# artifacts, not the engine. NOTE: README.md is a real project doc — keep it
-# tracked; do NOT add it here.
+# Everything Claude-related: the multi-agent coordination board, the interface
+# catalog, and any Claude Code config/plans/memory. Process artifacts, not the
+# engine. NOTE: README.md is a real project doc — keep it tracked; do NOT add it here.
 CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
 API-REFERENCE.md
+.claude/
+.claude*
+*.claude
 
 # Leftover source texture (unused; converted to res/textures/metal.jpg)
 *.avif
