@@ -200,9 +200,13 @@ void TestGame::Init(const Window& window) {
     // aim; R resets. The spawner holds its Mesh+Material BY VALUE (P1.5), so no
     // eviction. Red "bricks" balls read apart from the metal ramp.
     Entity* spawner = new Entity();
+    // launchSpeed 12 (down from the 20 default): slower throws so balls don't
+    // spin up to a manic rate on impact — a gripping ball reaches rolling speed
+    // omega = v/r, so a slower throw simply spins slower. (The engine has no
+    // rolling damping yet, so spin persists — flagged to Agent 1.)
     spawner->AddComponent(new BallSpawnerComponent(
         &engine, spawner, cameraEntity->GetTransform(), Mesh("sphere.obj"),
-        Material("bricks")));
+        Material("bricks"), 1.0f /*radius*/, 12.0f /*launchSpeed*/));
     AddToScene(spawner);
 }
 

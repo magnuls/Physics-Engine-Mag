@@ -93,7 +93,10 @@ class BallSpawnerComponent : public EntityComponent {
         // friction-0 ball is frictionless against ANY surface — the ball must
         // carry its own. Matches the demo floor/pre-placed-ball value.
         // NOTE for Agent 3 (owner): a ctor param would let scenes tune this.
-        ball.SetFriction(0.6f);
+        // 0.4 (down from 0.6): grips enough to roll (not slide forever) but the
+        // spin-up on impact is gentler. Spin still doesn't DECAY (no rolling
+        // resistance in the solver) — flagged to Agent 1.
+        ball.SetFriction(0.4f);
         std::size_t index = m_engine->AddObject(ball);
 
         // Reuse the held mesh/material (ref-counted copies) — no per-spawn name
