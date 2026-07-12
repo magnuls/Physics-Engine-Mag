@@ -2,8 +2,8 @@
 
 A real-time **3D rigid-body physics engine** written from scratch in **C++20**,
 integrated into an OpenGL/SDL2 forward renderer as an interactive sandbox. The
-physics subsystem — collision detection, a warm-started sequential-impulse
-constraint solver, friction, continuous collision detection, and sleeping — is
+physics subsystem, collision detection, a warm started sequential-impulse
+constraint solver, friction, continuous collision detection, and sleeping, is
 the focus here; the rendering half is a complete forward renderer the physics
 plugs into.
 
@@ -24,20 +24,20 @@ real time.
 
 **Physics (`src/physics/`)**
 - **Colliders:** sphere, AABB, **oriented box (OBB)**, and infinite plane.
-- **Narrow phase:** `Physics::collision<A, B>()` — a `std::variant`-dispatched
-  set of routines specialized for every shape pair (Separating-Axis Theorem for
+- **Narrow phase:** `Physics::collision<A, B>()` — a `std::variant` dispatched
+  set of routines specialized for every shape pair (Separating Axis Theorem for
   oriented boxes), returning an `IntersectData` contact manifold (hit flag,
   penetration depth, unit normal, contact point).
 - **Broad phase:** `Physics::Broadphase::sweepAndPrune()` culls the O(N²) pair
   check to candidate AABB overlaps.
 - **Solver:** a **sequential-impulse** constraint solver (8 velocity iterations,
   **warm-started** from a persistent contact cache) with **Coulomb friction**,
-  restitution, and Baumgarte positional correction — stable stacks and objects
+  restitution, and Baumgarte positional correction with stable stacks and objects
   that settle instead of jittering.
-- **Rotational dynamics:** per-shape inverse inertia tensors and quaternion
-  orientation integration — dropped boxes tip on their corners.
+- **Rotational dynamics:** per shape inverse inertia tensors and quaternion
+  orientation integration dropped boxes tip on their corners.
 - **Continuous collision detection:** speculative contacts stop fast bodies
-  (thrown balls) from tunnelling through thin geometry — opt-in per body.
+  (thrown balls) from tunnelling through thin geometry opt in per body.
 - **Sleeping / islands:** resting bodies stop being integrated and solved
   (union-find islands sleep and wake together) to cut solver cost.
 - **Colliders as components:** `Physics::{Sphere,AABB,OBB,Plane}Collider` are
