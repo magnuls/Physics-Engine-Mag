@@ -144,11 +144,19 @@ void TestGame::Init(const Window& window) {
 
     // Helpers: spawn a dynamic body + its rendered entity, wired by stable index,
     // with a per-body friction coefficient (default 0 = frictionless).
+    // DAMP-1 demo tuning: rolling resistance so rolled/spun bodies bleed energy
+    // and come to rest instead of rolling/spinning forever (Agent 1's per-body
+    // damping; engine default is 0 = off). Angular dominates so spin decays;
+    // tiny linear so throws still travel.
+    const float kAngularDamping = 0.3f;
+    const float kLinearDamping = 0.05f;
     auto addSphere = [&](const Vector3f& pos, const char* material,
                          float friction) {
         std::size_t index =
             engine.AddObject(Physics::PhysicsObject::Sphere(pos, 1.0f));
         engine.GetObject(index).SetFriction(friction);
+        engine.GetObject(index).SetAngularDamping(kAngularDamping);
+        engine.GetObject(index).SetLinearDamping(kLinearDamping);
         AddToScene(
             (new Entity(pos))
                 ->AddComponent(
@@ -160,6 +168,8 @@ void TestGame::Init(const Window& window) {
         std::size_t index = engine.AddObject(
             Physics::PhysicsObject::Box(pos - half, pos + half));
         engine.GetObject(index).SetFriction(friction);
+        engine.GetObject(index).SetAngularDamping(kAngularDamping);
+        engine.GetObject(index).SetLinearDamping(kLinearDamping);
         AddToScene(
             (new Entity(pos))
                 ->AddComponent(
