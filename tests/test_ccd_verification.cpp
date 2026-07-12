@@ -23,6 +23,9 @@
 
 #if PHYSICS_CCD_LANDED
 
+#include <algorithm>
+#include <cmath>
+
 #include "../src/physics/physicsEngine.h"
 #include "../src/physics/physicsObject.h"
 
@@ -124,6 +127,42 @@ TEST(CcdVerify, CcdOnLeavesNormalCollisionUnchanged) {
 
     EXPECT_NEAR(e.GetObject(0).GetPosition().GetX(), 13.5f, 0.5f);
     EXPECT_LT(std::fabs(e.GetObject(0).GetVelocity().GetX()), 0.5f);
+}
+
+// REGRESSION for the CCD energy-injection bug (found 2026-07-11: spawned balls
+// "spin back like crazy on landing"; fixed by Agent 1 — speculative contacts are
+// cold-started + skip friction). The pump ONLY reproduces with the full recipe
+// per Agent 1: CCD ON + friction > 0 on BOTH ball and floor + restitution > 0 +
+// SEVERAL bounces (a frictionless or single-bounce setup misses it). A
+// fast continuous frictional ball thrown onto a bouncy frictional floor must
+// keep |v| and |w| BOUNDED across many bounces — the bug drove |v| ~20 -> ~90
+// m/s and |w| -> ~300 rad/s.
+TEST(CcdVerify, ContinuousFrictionalBallOnBouncyFloorStaysBounded) {
+    PhysicsEngine e;
+    e.SetGravity(Vector3f(0, -9.81f, 0));
+    e.SetRestitution(0.5f);  // bouncy -> many bounces (needed to trip the bug)
+
+    PhysicsObject ball =
+        PhysicsObject::Sphere(Vector3f(0, 8, 0), 1.0f, Vector3f(18, -6, 0));
+    ball.SetContinuous(true);  // CCD on — the trigger
+    ball.SetFriction(0.6f);    // friction on the ball ...
+    e.AddObject(ball);
+    e.AddObject(
+        PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.6f));  // ...and floor
+
+    float peakV = 0.0f, peakW = 0.0f;
+    for (int i = 0; i < 600; ++i) {  // 10 s — many bounces
+        e.Simulate(kDt);
+        e.HandleCollisions();
+        const PhysicsObject& b = e.GetObject(0);
+        peakV = std::max(peakV, b.GetVelocity().Length());
+        peakW = std::max(peakW, b.GetAngularVelocity().Length());
+        ASSERT_FALSE(std::isnan(peakV) || std::isnan(peakW)) << "NaN at step " << i;
+    }
+    // Bounds sit well above healthy motion (impact ~20 m/s, roll ~20 rad/s) yet
+    // far below the bug's runaway (|v| ~90, |w| ~300). A regression trips these.
+    EXPECT_LT(peakV, 45.0f) << "linear velocity ran away (CCD energy pump)";
+    EXPECT_LT(peakW, 90.0f) << "angular velocity ran away (CCD energy pump)";
 }
 
 #else
