@@ -159,6 +159,15 @@ bool PhysicsEngine::BuildContact(std::size_t ia, std::size_t ib,
 }
 
 void PhysicsEngine::WarmStart(Contact& c) {
+    // Speculative (CCD) contacts are excluded from warm starting entirely.
+    // They skip the friction solve, so a warm-started tangent impulse would
+    // never be corrected — after a real landing caches large friction
+    // impulses, re-applying them on the next step's speculative contact is a
+    // free kick at a long lever arm (the sphere-plane contact point sits on
+    // the plane, far below an airborne center), which pumped energy into
+    // bouncing CCD bodies (|v| 20->90, sign-reversing |w|). A cold-started
+    // speculative contact converges in one iteration anyway.
+    if (c.speculative) return;
     auto it = m_impulseCache.find({c.ia, c.ib});
     if (it == m_impulseCache.end()) return;
     c.Pn = it->second.Pn;
@@ -382,9 +391,13 @@ void PhysicsEngine::HandleCollisions() {
     SleepIslands(contacts);
 
     // Remember this step's accumulated impulses for next-step warm starting.
+    // Speculative contacts don't contribute: their Pn is a CCD braking
+    // constraint, not a contact impulse — inheriting it as a warm start on the
+    // following real contact would misrepresent the landing.
     m_impulseCache.clear();
     for (const auto& c : contacts)
-        m_impulseCache[{c.ia, c.ib}] = CachedImpulse{c.Pn, c.Pt1, c.Pt2};
+        if (!c.speculative)
+            m_impulseCache[{c.ia, c.ib}] = CachedImpulse{c.Pn, c.Pt1, c.Pt2};
 }
 
 }  // namespace Physics

@@ -95,6 +95,39 @@ TEST(CcdTest, SlowBodyUnaffectedByThreshold) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 2.0f, 1e-4f);
 }
 
+// Energy-injection regression (Agent 3's repro): a thrown CONTINUOUS ball
+// landing on a frictional floor under gravity must never GAIN energy. The bug:
+// warm-starting a speculative contact re-applied the previous real landing's
+// cached friction impulses with no speculative friction solve to correct them
+// — a free tangential kick at a long lever arm that pumped |v| ~20 -> ~90 and
+// |w| -> ~300 (sign-reversing) across bounces.
+TEST(CcdTest, ContinuousLandingInjectsNoEnergy) {
+    PhysicsEngine engine;
+    engine.SetGravity(Vector3f(0, -9.81f, 0));
+    engine.SetRestitution(0.3f);  // demo-like: bouncy + frictional
+    PhysicsObject ball = PhysicsObject::Sphere(Vector3f(0, 5, 0), 1.0f,
+                                               Vector3f(20, -5, 0));  // thrown
+    ball.SetFriction(0.5f);
+    ball.SetContinuous(true);
+    engine.AddObject(ball);
+    engine.AddObject(
+        PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.5f));
+
+    // Energy bound: |v| can never exceed sqrt(|v0|^2 + 2*g*h0) ~ 22.9 (all
+    // potential energy converted, nothing added). Friction bounds |w| by the
+    // cone; ~35 rad/s is generous. Check EVERY step, across many bounces.
+    const float dt = 1.0f / 60.0f;
+    for (int i = 0; i < 600; ++i) {
+        engine.Simulate(dt);
+        engine.HandleCollisions();
+        EXPECT_LT(engine.GetObject(0).GetVelocity().Length(), 24.0f);
+        EXPECT_LT(engine.GetObject(0).GetAngularVelocity().Length(), 35.0f);
+    }
+    // And it ends up ON the floor, not launched into orbit.
+    EXPECT_LT(engine.GetObject(0).GetPosition().GetY(), 3.0f);
+    EXPECT_GT(engine.GetObject(0).GetPosition().GetY(), 0.5f);
+}
+
 // Regression guard: CCD must not destabilize ordinary behavior — a continuous
 // ball dropped under gravity still settles on the floor like any other body.
 TEST(CcdTest, ContinuousBallStillSettlesOnFloor) {

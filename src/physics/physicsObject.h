@@ -44,7 +44,13 @@ class PhysicsObject {
                              float invMass = 1.0f);
 
     // A static (immovable) plane in Hesse form (unit-ish normal + scalar).
-    static PhysicsObject StaticPlane(const Vector3f& normal, float scaler);
+    // `friction` is the plane's Coulomb coefficient (SP-FRIC): the ground is
+    // the one body every scene has, and forgetting its friction silently
+    // zeroes ALL ground friction (pair combine is sqrt(muA*muB)) — taking it
+    // at construction makes that hard to miss. Default 0 keeps the engine's
+    // neutral defaults and existing call sites unchanged.
+    static PhysicsObject StaticPlane(const Vector3f& normal, float scaler,
+                                     float friction = 0.0f);
 
     // A dynamic oriented (rotatable) box. Orientation is fixed for its lifetime
     // — this first pass integrates position only, no angular velocity/torque.
@@ -77,6 +83,18 @@ class PhysicsObject {
     // up. The solver combines a pair's coefficients as sqrt(muA * muB).
     float GetFriction() const { return m_friction; }
     void SetFriction(float mu) { m_friction = mu; }
+
+    // Damping (DAMP-1): per-body drag applied during integration with the
+    // unconditionally-stable Bullet form v *= 1/(1 + d*dt). Angular damping is
+    // the rolling-resistance stand-in that lets a rolling/spinning body bleed
+    // energy, come to rest and finally sleep — without it, angular velocity
+    // only ever changes through contact impulses. Defaults 0 = no drag (the
+    // engine stays neutral; scenes dial it up, typically angular > linear).
+    void SetLinearDamping(float d) { m_linearDamping = d; }
+    float GetLinearDamping() const { return m_linearDamping; }
+    void SetAngularDamping(float d) { m_angularDamping = d; }
+    float GetAngularDamping() const { return m_angularDamping; }
+
     bool IsStatic() const { return m_invMass == 0.0f; }
     bool IsPlane() const { return m_kind == ShapeKind::PLANE; }
 
@@ -138,6 +156,8 @@ class PhysicsObject {
     Vector3f m_velocity{0, 0, 0};
     float m_invMass{1.0f};     // 0 => static/immovable
     float m_friction{0.0f};    // Coulomb coefficient, 0 = frictionless
+    float m_linearDamping{0.0f};   // DAMP-1: 1/s, 0 = no drag
+    float m_angularDamping{0.0f};  // DAMP-1: 1/s, 0 = no drag
     bool m_continuous{false};  // CCD opt-in (speculative contacts)
     bool m_awake{true};        // false = engine put this body to sleep
     float m_sleepTime{0.0f};   // seconds spent below sleep thresholds

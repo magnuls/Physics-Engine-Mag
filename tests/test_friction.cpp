@@ -170,6 +170,17 @@ TEST(FrictionTest, OneSidedZeroFrictionSlidesFreely) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 5.0f, 1e-3f);
 }
 
+// SP-FRIC: StaticPlane takes its friction at construction (contract test) —
+// the 2-arg form stays frictionless, so existing call sites are unchanged.
+TEST(FrictionTest, StaticPlaneFrictionParam) {
+    EXPECT_NEAR(
+        PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.6f).GetFriction(),
+        0.6f, 1e-6f);
+    EXPECT_NEAR(
+        PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f).GetFriction(), 0.0f,
+        1e-6f);
+}
+
 // PHYS-FEEL fix validation: the spec'd demo values (floor mu=0.6 vs body
 // mu=0.5 -> pair sqrt(0.30)~0.55) bring a 5 m/s slider to rest in ~1 s.
 TEST(FrictionTest, FrictionalFloorStopsSliderDemoSpec) {
