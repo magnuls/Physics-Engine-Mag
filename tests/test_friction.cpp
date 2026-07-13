@@ -151,6 +151,41 @@ TEST(FrictionTest, TwoBoxStackSettles) {
     EXPECT_LT(std::fabs(engine.GetObject(1).GetVelocity().GetY()), 0.1f);
 }
 
+// PHYS-FEEL regression (Round 4): friction is a PAIR property combined as
+// sqrt(muA*muB) — one frictionless side zeroes the pair. This is the exact
+// mechanism behind the "demo friction isn't working" report (the demo floor
+// had mu=0): a frictional box on a FRICTIONLESS floor slides freely. Pinned
+// here so the combine semantics can't drift silently.
+TEST(FrictionTest, OneSidedZeroFrictionSlidesFreely) {
+    PhysicsEngine engine;
+    engine.SetRestitution(0.0f);
+    engine.AddObject(slidingBox(5.0f, 0.5f));  // box HAS friction...
+    engine.AddObject(frictionFloor(0.0f));     // ...floor has none -> pair 0
+
+    const float dt = 1.0f / 60.0f;
+    for (int i = 0; i < 60; ++i) {
+        engine.Simulate(dt);
+        engine.HandleCollisions();
+    }
+    EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 5.0f, 1e-3f);
+}
+
+// PHYS-FEEL fix validation: the spec'd demo values (floor mu=0.6 vs body
+// mu=0.5 -> pair sqrt(0.30)~0.55) bring a 5 m/s slider to rest in ~1 s.
+TEST(FrictionTest, FrictionalFloorStopsSliderDemoSpec) {
+    PhysicsEngine engine;
+    engine.SetRestitution(0.0f);
+    engine.AddObject(slidingBox(5.0f, 0.5f));
+    engine.AddObject(frictionFloor(0.6f));
+
+    const float dt = 1.0f / 60.0f;
+    for (int i = 0; i < 120; ++i) {  // 2 s >> v/(mu*g) ~ 0.93 s
+        engine.Simulate(dt);
+        engine.HandleCollisions();
+    }
+    EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 0.0f, 0.05f);
+}
+
 // A2 payoff (support-point contacts in obbCollision.cpp): an OBB landing on
 // the floor TILTED contacts at its corner, whose off-center lever arm produces
 // torque — the box starts tipping. (Center-projected contacts gave zero torque
