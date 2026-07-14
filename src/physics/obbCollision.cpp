@@ -6,10 +6,9 @@
 
 #include "contactPoints.h"
 
-// OBB narrow-phase collision, kept out of Agent 3's collisionDispatch.cpp.
-// Every result follows the shared convention: m_normal points from the first
-// shape (A) toward the second (B), unit on a hit; `distance` is the separation
-// gap on a miss and the penetration depth on a hit.
+// OBB narrow-phase collision. Every result follows the shared convention:
+// m_normal points from the first shape (A) toward the second (B), unit on a hit;
+// `distance` is the separation gap on a miss and the penetration depth on a hit.
 namespace Physics {
 namespace {
 
@@ -87,12 +86,12 @@ IntersectData satObbObb(const OBB& A, const OBB& B) {
     if (t.Dot(bestAxis) < 0.0f) bestAxis = bestAxis * -1.0f;
 
     bool hit = bestSep <= 0.0f;
-    // Contact point ON the touching surfaces (A2, Agent 3's obbSupportPoint):
-    // midpoint of A's furthest point toward B and B's furthest point toward A
-    // along the contact axis. For a face-face contact the zero-dot axes fall
-    // back to face centers, so a resting box gets a stable centered contact;
-    // an edge/corner contact returns the actual corner — that off-center lever
-    // arm is what makes a box landing on a corner tip (A1's angular response).
+    // Contact point on the touching surfaces: midpoint of A's furthest point
+    // toward B and B's furthest point toward A along the contact axis. For a
+    // face-face contact the zero-dot axes fall back to face centers, so a
+    // resting box gets a stable centered contact; an edge/corner contact returns
+    // the actual corner — that off-center lever arm is what makes a box landing
+    // on a corner tip.
     Vector3f pa{obbSupportPoint(a.c, Vector3f(a.e[0], a.e[1], a.e[2]),
                                 a.axis[0], a.axis[1], a.axis[2], bestAxis)};
     Vector3f pb{obbSupportPoint(b.c, Vector3f(b.e[0], b.e[1], b.e[2]),
@@ -173,10 +172,10 @@ IntersectData collision<OBB, Plane>(const OBB& a, const Plane& b) {
     // From the box (A) toward the plane (B): opposite the side the center is
     // on.
     Vector3f normal{n * (signedDist >= 0 ? -1.0f : 1.0f)};
-    // Contact = the box point deepest toward the plane (A2 support point), not
-    // the center's projection: a tilted box contacts the floor at its corner,
-    // giving the off-center lever arm that lets it tip over and settle flat.
-    // A face-flat box still gets its face center (zero-dot axes fall back).
+    // Contact = the box point deepest toward the plane, not the center's
+    // projection: a tilted box contacts the floor at its corner, giving the
+    // off-center lever arm that lets it tip over and settle flat. A face-flat
+    // box still gets its face center (zero-dot axes fall back).
     Vector3f contact{obbSupportPoint(f.c, a.getHalfExtents(), f.axis[0],
                                      f.axis[1], f.axis[2], normal)};
     return IntersectData(std::abs(signedDist) <= r, std::abs(signedDist),

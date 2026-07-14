@@ -7,8 +7,8 @@
 
 using namespace Physics;
 
-// A1 — angular dynamics: bodies gain angular velocity from off-centre impulses
-// and integrate their orientation over time.
+// Angular dynamics: bodies gain angular velocity from off-centre impulses and
+// integrate their orientation over time.
 
 // Orientation advances by integrating a constant angular velocity.
 TEST(AngularTest, OrientationIntegratesFromAngularVelocity) {

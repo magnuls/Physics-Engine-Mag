@@ -5,9 +5,8 @@
 
 using namespace Physics;
 
-// DAMP-1 — per-body linear/angular damping (contract in API-REFERENCE §6):
-// v *= 1/(1 + d*dt) after the velocity update in Integrate(). Defaults 0 keep
-// every existing trajectory bit-identical.
+// Per-body linear/angular damping: v *= 1/(1 + d*dt) after the velocity update
+// in Integrate(). Defaults 0 keep every existing trajectory bit-identical.
 
 namespace {
 constexpr float kDt = 1.0f / 60.0f;
@@ -55,10 +54,9 @@ TEST(DampingTest, ZeroDampingIsExactNoOp) {
     EXPECT_EQ(box.GetAngularVelocity().GetZ(), 3.0f);
 }
 
-// The payoff (the demo's "balls spin forever" fix): a damped ball on a
-// frictional floor spins up toward rolling, then BLEEDS energy, comes to rest
-// and — with sleeping enabled — finally falls asleep. Without damping this
-// exact setup rolls forever (FrictionTest.SphereSpinsUpToRolling).
+// A damped ball on a frictional floor spins up toward rolling, then bleeds
+// energy, comes to rest and — with sleeping enabled — falls asleep. Without
+// damping this exact setup rolls forever.
 TEST(DampingTest, DampedRollerComesToRestAndSleeps) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -70,7 +68,7 @@ TEST(DampingTest, DampedRollerComesToRestAndSleeps) {
     ball.SetAngularDamping(2.0f);
     engine.AddObject(ball);
     engine.AddObject(
-        PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.5f));  // SP-FRIC
+        PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.5f));
 
     for (int i = 0; i < 600; ++i) {  // 10 s — rest is reached in ~4 s
         engine.Simulate(kDt);

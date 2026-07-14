@@ -7,9 +7,8 @@
 
 using namespace Physics;
 
-// V3 — impulse-based collision response: inverse mass, restitution, and
-// positional correction. (Default restitution is 1.0, which reproduces the
-// original elastic reflection — see PhysicsEngineTest.)
+// Impulse-based collision response: inverse mass, restitution, and positional
+// correction. Default restitution is 1.0 (elastic reflection).
 
 // Restitution 0 is fully inelastic: the approaching normal velocity is removed.
 TEST(ResponseTest, RestitutionZeroStops) {
@@ -65,9 +64,8 @@ TEST(ResponseTest, PositionalCorrectionReducesPenetration) {
     EXPECT_LE(after, 1.0f + 1e-4f);  // but not overshot past resting height
 }
 
-// The payoff: a ball dropped under gravity SETTLES on the floor (comes to rest
-// near its radius above the plane) instead of sinking through or bouncing
-// forever. This is what makes the sandbox look believable.
+// A ball dropped under gravity settles on the floor (comes to rest near its
+// radius above the plane) instead of sinking through or bouncing forever.
 TEST(ResponseTest, BallSettlesOnFloorUnderGravity) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -9.81f, 0));

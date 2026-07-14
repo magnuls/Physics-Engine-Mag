@@ -14,18 +14,16 @@
 // PhysicsEngine owns a flat list of PhysicsObjects. Each fixed step:
 //   Simulate(dt)        -> integrate every body (semi-implicit Euler + gravity)
 //   HandleCollisions()  -> broad-phase cull, narrow-phase collision<>(), then a
-//                          SEQUENTIAL-IMPULSE contact solver: all contacts are
-//                          gathered first, warm-started from the previous
-//                          step's accumulated impulses, then iterated a few
-//                          times so simultaneous contacts (stacks!) converge
-//                          together. Each contact solves a normal impulse
-//                          (accumulated, clamped >= 0, with restitution) and a
-//                          Coulomb friction impulse (clamped to |Jt| <= mu *
-//                          Jn), followed by a Baumgarte positional-correction
-//                          pass.
-// It builds only on the existing detection layer (collision<A,B>(),
-// IntersectData.m_normal, Broadphase::sweepAndPrune) — it does not modify any
-// of it. See PhysicsEngineComponent for the Entity/Component bridge.
+//                          sequential-impulse contact solver. All contacts are
+//                          gathered first, warm-started from the previous step's
+//                          accumulated impulses, then iterated a few times so
+//                          stacks converge together. Each contact solves a
+//                          normal impulse (accumulated, clamped >= 0, with
+//                          restitution) and a Coulomb friction impulse (clamped
+//                          to |Jt| <= mu * Jn), then a Baumgarte position pass.
+// Builds on the detection layer (collision<A,B>(), IntersectData.m_normal,
+// Broadphase::sweepAndPrune) without modifying it. See PhysicsEngineComponent
+// for the Entity/Component bridge.
 namespace Physics {
 
 class PhysicsEngine {
@@ -49,23 +47,20 @@ class PhysicsEngine {
     void SetRestitution(float e) { m_restitution = e; }
     float GetRestitution() const { return m_restitution; }
 
-    // CCD auto-threshold, in DISTANCE PER STEP: any body travelling further
-    // than this in one fixed step is treated as continuous even without
-    // PhysicsObject::SetContinuous(true). Default: infinity (auto-CCD
-    // disabled), so CCD is strictly opt-in and default behavior — and the
-    // whole existing test suite — is unchanged. A scene protecting itself from
-    // fast throws would set roughly its thinnest geometry's half-thickness.
+    // CCD auto-threshold, in distance per step: any body travelling further than
+    // this in one step is treated as continuous even without SetContinuous(true).
+    // Default infinity (auto-CCD off) keeps CCD strictly opt-in. A scene guarding
+    // against fast throws would set roughly its thinnest geometry's half-thickness.
     void SetCcdSpeedThreshold(float distancePerStep) {
         m_ccdSpeedThreshold = distancePerStep;
     }
     float GetCcdSpeedThreshold() const { return m_ccdSpeedThreshold; }
 
-    // Sleeping (SLEEP-1): bodies at rest long enough are put to sleep —
-    // skipped by integration and the solver — and wake on contact with an
-    // awake body, on WakeUp(), or on an external velocity change. Islands
-    // (contact-connected groups of dynamic bodies) sleep and wake as one.
-    // MASTER SWITCH DEFAULTS OFF: zero behavior change unless a scene opts in.
-    // Disabling wakes everything so no body is stranded asleep.
+    // Sleeping: bodies at rest long enough are put to sleep (skipped by
+    // integration and the solver) and wake on contact with an awake body, on
+    // WakeUp(), or on an external velocity change. Islands (contact-connected
+    // groups of dynamic bodies) sleep and wake as one. Defaults off. Disabling
+    // wakes everything so no body is stranded asleep.
     void SetSleepingEnabled(bool on);
     bool IsSleepingEnabled() const { return m_sleepingEnabled; }
     // A body sleeps once BOTH its linear and angular speeds have stayed below
@@ -121,9 +116,9 @@ class PhysicsEngine {
     // further per step than the auto-threshold).
     bool CcdActive(const PhysicsObject& o) const;
 
-    // SLEEP-1 passes (no-ops unless sleeping is enabled). WakeIslands: union
-    // contact-connected dynamic bodies and wake every island containing an
-    // awake member (also drops solver contacts whose endpoints all sleep).
+    // Sleep passes (no-ops unless sleeping is enabled). WakeIslands: union
+    // contact-connected dynamic bodies and wake every island containing an awake
+    // member (also drops solver contacts whose endpoints all sleep).
     // SleepIslands: advance per-body rest timers and put each island to sleep
     // once every member has rested past m_timeToSleep.
     void WakeIslands(std::vector<Contact>& contacts);
@@ -133,7 +128,7 @@ class PhysicsEngine {
     Vector3f m_gravity{0.0f, -9.81f, 0.0f};
     float m_restitution{1.0f};
     float m_ccdSpeedThreshold{std::numeric_limits<float>::infinity()};
-    bool m_sleepingEnabled{false};         // SLEEP-1 master switch, default OFF
+    bool m_sleepingEnabled{false};         // master switch, default off
     float m_sleepLinearThreshold{0.05f};   // units/s
     float m_sleepAngularThreshold{0.05f};  // rad/s
     float m_timeToSleep{0.5f};             // seconds of rest before sleeping

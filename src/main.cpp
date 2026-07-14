@@ -8,28 +8,18 @@
 #include "components/physicsObjectComponent.h"
 #include "physics/physicsObject.h"
 
-// DEMO SCENE — interactive physics sandbox that SHOWS OFF the physics.
-//   Agent 2 (scene/UX): body layout, materials, friction, camera framing.
-//   Agent 0 (2026-07-06): checker floor + "sun" DirectionalLight (kept below).
-//   Agent 3 (V2): SPACE spawns a ball along the camera aim, R resets.
+// Interactive physics sandbox demo. Three set-pieces: a tilted friction ramp
+// (rolling vs sliding ball), a 5-box stack that stays standing, and a
+// ball-on-ball drop. SPACE spawns a ball along the camera aim, R resets.
 //
-// Three set-pieces demonstrate the newly-landed friction + stable-stacking
-// solver (Agent 1) and angular dynamics:
-//   • a tilted static RAMP with friction — a rolling ball vs a frictionless
-//     sliding ball go down it side by side;
-//   • a 5-box STABLE STACK that stays standing;
-//   • a clean ball-on-ball drop in the middle.
-// Uses only existing public API (PhysicsObject::OrientedBox / SetFriction,
-// PhysicsEngine::SetRestitution — see API-REFERENCE §3).
+// Sizing: sphere.obj is unit-radius and cube.obj spans [-1,1] per axis, so at
+// Transform scale s the physics radius / half-extent matches the mesh.
 //
-// Sizing: sphere.obj is a unit-radius sphere and cube.obj spans [-1,1] per axis,
-// so at Transform scale s the physics radius / half-extent s matches the mesh.
-//
-// MATERIALS: a Material's data is evicted from the static resource map once its
-// last reference drops (material.cpp), so Material("x") asserts if "x" is absent.
-// Every Init MeshRenderer keeps its own material alive; the runtime spawner is
-// safe on its own (Agent 3's P1.5 fix holds Mesh+Material BY VALUE). Material ->
-// body: checker=floor, metal=ramp, bricks2=stack boxes, bricks=all balls.
+// Heads up: a Material's data is evicted from the static resource map once its
+// last reference drops (material.cpp), so Material("x") asserts if "x" is gone.
+// Every Init MeshRenderer keeps its own material alive; the spawner holds
+// Mesh+Material by value. Materials: checker=floor, metal=ramp, bricks2=stack,
+// bricks=all balls.
 class TestGame : public Game {
    public:
     TestGame() {}
@@ -52,7 +42,7 @@ void TestGame::Init(const Window& window) {
     Material bricks("bricks", Texture("bricks.jpg"), 0.2f, 4);
 
     // Camera framed on all three set-pieces (ramp at -x, ball-on-ball centre,
-    // stack at +x). Captured so V2's ball spawner can read its position/aim.
+    // stack at +x). Captured so the ball spawner can read its position/aim.
     Entity* cameraEntity =
         (new Entity(Vector3f(-1, 7, 28)))
             ->AddComponent(new CameraComponent(Matrix4f().InitPerspective(
@@ -64,15 +54,14 @@ void TestGame::Init(const Window& window) {
     cameraEntity->GetTransform()->LookAt(Vector3f(2, 3, 0), Vector3f(0, 1, 0));
     AddToScene(cameraEntity);
 
-    // Point light overhead + a directional "sun" (Agent 0) so nothing is dark.
+    // Point light overhead + a directional "sun" so nothing is dark.
     AddToScene((new Entity(Vector3f(0, 15, 8)))
                    ->AddComponent(new PointLight(Vector3f(1, 1, 1), 60,
                                                  Attenuation(0, 0, 1))));
-    // The sun casts SHADOWS: shadowMapSizeAsPowerOf2=10 (1024^2 variance shadow
-    // map) turns on shadow mapping for this DirectionalLight, so every body drops
-    // a grounded shadow onto the checker floor. shadowArea=60 covers the scene
-    // (ramp at -x .. stack at +x) in the shadow camera's ortho frustum. Existing
-    // rendering API (DirectionalLight/ShadowInfo) — no new interface.
+    // The sun casts shadows: shadowMapSizeAsPowerOf2=10 (1024^2 variance shadow
+    // map) turns on shadow mapping, so every body drops a grounded shadow onto
+    // the checker floor. shadowArea=60 covers the scene (ramp at -x .. stack at
+    // +x) in the shadow camera's ortho frustum.
     AddToScene(
         (new Entity(Vector3f(0, 0, 0),
                     Quaternion(Vector3f(1, 0, 0), ToRadians(50.0f))))
@@ -85,17 +74,14 @@ void TestGame::Init(const Window& window) {
     Physics::PhysicsEngine& engine = physics->GetPhysicsEngine();
 
     // Partly-inelastic so drops lose energy and settle quickly (engine default
-    // stays 1.0 — a per-scene dial, per Agent 0's design rule). PHYS-FEEL: 0.2
-    // (down from 0.3) so bodies stop bouncing sooner.
+    // is 1.0). 0.2 so bodies stop bouncing sooner.
     engine.SetRestitution(0.2f);
 
-    // PHYS-FEEL: stronger-than-earth gravity so thrown/dropped bodies fall with
-    // weight instead of floating (user-confirmed the default -9.81 felt floaty).
+    // Stronger-than-earth gravity so bodies fall with weight instead of floating.
     engine.SetGravity(Vector3f(0, -15, 0));
 
-    // Let settled piles SLEEP (skip integrate+solve) so a big stack of resting
-    // balls stops costing solver time; contact or reset wakes them again
-    // (Agent 1's SLEEP-1). Agent 0 directive; engine default is off.
+    // Let settled piles sleep (skip integrate+solve) so a big stack of resting
+    // balls stops costing solver time; contact or reset wakes them again.
     engine.SetSleepingEnabled(true);
 
     // Ground: a static plane at y=0 for physics, plus an INFINITE-LOOKING visual
@@ -107,10 +93,9 @@ void TestGame::Init(const Window& window) {
     // regardless of the engine's backface-cull winding.
     std::size_t floorIdx =
         engine.AddObject(Physics::PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
-    // PHYS-FEEL: give the floor friction (same pattern as the ramp) so bodies
-    // grip and come to rest instead of sliding forever across a frictionless
-    // ground. Friction is per-body and combined at each contact, so the floor
-    // must have it too, not just the balls.
+    // Give the floor friction so bodies grip and settle instead of sliding
+    // forever. Friction is combined per-contact, so the floor needs it too, not
+    // just the balls.
     engine.GetObject(floorIdx).SetFriction(0.6f);
     {
         const float S = 500.0f;       // half-size -> 1000x1000, edges past view
@@ -144,10 +129,9 @@ void TestGame::Init(const Window& window) {
 
     // Helpers: spawn a dynamic body + its rendered entity, wired by stable index,
     // with a per-body friction coefficient (default 0 = frictionless).
-    // DAMP-1 demo tuning: rolling resistance so rolled/spun bodies bleed energy
-    // and come to rest instead of rolling/spinning forever (Agent 1's per-body
-    // damping; engine default is 0 = off). Angular dominates so spin decays;
-    // tiny linear so throws still travel.
+    // Damping so rolled/spun bodies bleed energy and come to rest instead of
+    // spinning forever. Angular dominates so spin decays; tiny linear so throws
+    // still travel.
     const float kAngularDamping = 0.4f;
     const float kLinearDamping = 0.05f;
     auto addSphere = [&](const Vector3f& pos, const char* material,
@@ -179,9 +163,8 @@ void TestGame::Init(const Window& window) {
 
     // ---- SET-PIECE 1: FRICTION RAMP (-x) -----------------------------------
     // A static (invMass 0) OrientedBox tilted ~20deg, with friction. Two balls
-    // are dropped onto it in separate z-lanes: one with high friction (it ROLLS,
-    // spinning down the slope) and one frictionless (it SLIDES without spin) —
-    // the visible difference is the whole point.
+    // dropped onto it in separate z-rows: high-friction one rolls (spins down
+    // the slope), frictionless one slides without spin.
     const Vector3f rampCenter(-8, 2.5f, 0);
     const float rampHalf = 3.0f;
     const Quaternion rampRot(Vector3f(0, 0, 1), ToRadians(20.0f));
@@ -196,9 +179,9 @@ void TestGame::Init(const Window& window) {
     addSphere(Vector3f(-8, 10, 1.5f), "bricks", 0.0f);   // slides
 
     // ---- SET-PIECE 2: STABLE STACK (+x) ------------------------------------
-    // Five axis-aligned boxes stacked exactly (2 tall each). Axis-aligned by
-    // design (BOX has no rotational inertia; OBB is the rotatable one). With the
-    // sequential-impulse solver + friction this tower stays standing.
+    // Five axis-aligned boxes stacked exactly (2 tall each). Axis-aligned on
+    // purpose (BOX has no rotational inertia; OBB is the rotatable one). The
+    // sequential-impulse solver + friction keeps this tower standing.
     for (int i = 0; i < 5; ++i)
         addBox(Vector3f(8, 1.0f + 2.0f * i, 0), "bricks2", 0.6f);
 
@@ -206,14 +189,13 @@ void TestGame::Init(const Window& window) {
     addSphere(Vector3f(0, 1, 0), "bricks", 0.5f);  // resting on the floor
     addSphere(Vector3f(0, 8, 0), "bricks", 0.5f);  // drops onto the one above
 
-    // V2 INTERACTIVE CONTROLS (Agent 3): SPACE throws a ball from the camera
-    // aim; R resets. The spawner holds its Mesh+Material BY VALUE (P1.5), so no
-    // eviction. Red "bricks" balls read apart from the metal ramp.
+    // SPACE throws a ball from the camera aim; R resets. The spawner holds its
+    // Mesh+Material by value so nothing gets evicted. Red "bricks" balls read
+    // apart from the metal ramp.
     Entity* spawner = new Entity();
-    // launchSpeed 12 (down from the 20 default): slower throws so balls don't
-    // spin up to a manic rate on impact — a gripping ball reaches rolling speed
-    // omega = v/r, so a slower throw simply spins slower. (The engine has no
-    // rolling damping yet, so spin persists — flagged to Agent 1.)
+    // launchSpeed 12 (default is 20): slower throws so balls don't spin up to a
+    // manic rate on impact — a gripping ball reaches rolling speed omega = v/r,
+    // so a slower throw spins slower.
     spawner->AddComponent(new BallSpawnerComponent(
         &engine, spawner, cameraEntity->GetTransform(), Mesh("sphere.obj"),
         Material("bricks"), 1.0f /*radius*/, 12.0f /*launchSpeed*/));
@@ -221,8 +203,8 @@ void TestGame::Init(const Window& window) {
 }
 
 int main() {
-    // No text/HUD renderer exists in this engine, so the controls are printed to
-    // the console at startup (Agent 0's SHOWCASE deliverable (d)).
+    // No text/HUD renderer in this engine, so print the controls to the console
+    // at startup.
     std::cout << "\n=== Physics Sandbox — controls ===\n"
                  "  SPACE      spawn / throw a ball from the camera aim\n"
                  "  R          reset the scene\n"
@@ -237,7 +219,7 @@ int main() {
     Window window(1000, 600, "3D Engine Visual");
 
     RenderingEngine renderer(window);
-    // BG-1: a dark slate background so the sandbox isn't framed by a black void.
+    // Dark slate background so the sandbox isn't framed by a black void.
     renderer.SetClearColor(Vector3f(0.06f, 0.07f, 0.09f));
 
     CoreEngine engine(60, &window, &renderer, &game);
