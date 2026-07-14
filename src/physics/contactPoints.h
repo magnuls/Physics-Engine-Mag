@@ -2,19 +2,12 @@
 #include "../core/math3d.h"
 #include "aabb.h"
 
-// Contact-point helpers.
-//
-// A believable angular response needs the contact point to sit on the actual
-// contact surface, because the torque a contact applies is driven by its lever
-// arm r = contactPoint - centerOfMass. A volume-centroid contact gives the
-// wrong (often zero) lever arm; a support point on the touching face/edge/vertex
-// gives the right one. These helpers return that support point.
+// Contact-point helpers. The contact point must sit on the contact surface so the
+// lever arm r = contactPoint - centerOfMass gives correct torque.
 namespace Physics {
 
-// Support point of an axis-aligned box: the point on the box furthest along
-// `dir`. Per axis: dir_i > 0 -> max_i, dir_i < 0 -> min_i, dir_i ~ 0 -> the
-// face center on that axis (so a flat/face contact returns the face center
-// rather than an arbitrary corner, which keeps the lever arm stable).
+// Support point of an axis-aligned box: the point furthest along dir. A
+// perpendicular axis returns the face center, keeping flat contacts stable.
 inline Vector3f aabbSupportPoint(const AABB& box, const Vector3f& dir) {
     const Vector3f mn{box.getMin()};
     const Vector3f mx{box.getMax()};
@@ -28,13 +21,8 @@ inline Vector3f aabbSupportPoint(const AABB& box, const Vector3f& dir) {
                     pick(dir.GetZ(), mn.GetZ(), mx.GetZ()));
 }
 
-// Support point of an ORIENTED box (center + half-extents + three unit axes):
-// the vertex furthest along `dir`. Step +h_i along local axis i when the axis
-// points with `dir` (dir . axis_i > 0), -h_i when against it, and 0 when
-// perpendicular (a face/edge contact stays centered on that axis).
-//
-// Handy for the OBB narrow-phase contact point. Example: the OBB contact vs a
-// plane with outward normal n is obbSupportPoint(center, half, ax, ay, az, -n).
+// Support point of an oriented box: the vertex furthest along dir. A perpendicular
+// axis stays centered. For an OBB vs plane, pass the outward normal negated as dir.
 inline Vector3f obbSupportPoint(const Vector3f& center,
                                 const Vector3f& halfExtents,
                                 const Vector3f& axisX, const Vector3f& axisY,

@@ -1,9 +1,6 @@
 #pragma once
 #include "../core/math3d.h"
-/*
- * The norm is the orientation of our plane
- * The scaler will show us where in 3D space our plane is
- */
+// norm is the plane orientation. scaler is its offset in 3D space.
 
 namespace Physics {
 

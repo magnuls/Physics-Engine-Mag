@@ -4,23 +4,18 @@
 
 namespace Physics {
 
-// ----------------------------------------------------------------
-// SphereCollider
 SphereCollider::SphereCollider(float radius, const Vector3f& localCenter)
     : m_localCenter(localCenter), m_localRadius(radius) {}
 
 BoundingSphere SphereCollider::getWorldSphere() const {
     const Transform& t = GetTransform();
-    // Full model matrix maps the local center to world space (handles
-    // translation, rotation, scale and any parent transforms).
+    // Full model matrix maps the local center to world space.
     Vector3f worldCenter =
         Vector3f(t.GetTransformation().Transform(m_localCenter));
     float worldRadius = m_localRadius * t.GetScale();
     return BoundingSphere(worldCenter, worldRadius);
 }
 
-// ------------------------------------------------------------------
-// AABBCollider
 AABBCollider::AABBCollider(const Vector3f& localMin, const Vector3f& localMax)
     : m_localMin(localMin), m_localMax(localMax) {}
 
@@ -28,9 +23,8 @@ AABB AABBCollider::getWorldAABB() const {
     const Transform& t = GetTransform();
     Matrix4f m = t.GetTransformation();
 
-    // Transform all 8 corners of the local box and refit an axis-aligned box
-    // around them, so the collider stays a valid AABB even when the entity is
-    // rotated (an oriented box is a separate OBB shape, out of scope here).
+    // Transform all 8 corners and refit an axis aligned box around them so it
+    // stays a valid AABB even when the entity is rotated.
     const Vector3f& lo = m_localMin;
     const Vector3f& hi = m_localMax;
     const Vector3f corners[8] = {
@@ -59,21 +53,18 @@ AABB AABBCollider::getWorldAABB() const {
     return AABB(worldMin, worldMax);
 }
 
-// -----------------------------------------------------------------
-// PlaneCollider
 PlaneCollider::PlaneCollider(const Vector3f& localNormal, float localScaler)
     : m_localNormal(localNormal), m_localScaler(localScaler) {}
 
 Plane PlaneCollider::getWorldPlane() const {
     const Transform& t = GetTransform();
 
-    // Rotate the normal by the entity's world rotation (directions ignore
-    // translation/scale); re-normalize to stay a unit normal.
+    // Rotate the normal by the entity's world rotation, then renormalize.
     Vector3f worldNormal =
         Vector3f(m_localNormal.Rotate(t.GetTransformedRot()).Normalized());
 
-    // The local point closest to the origin lies at normal * scaler; map it to
-    // world space and recompute the signed distance for the rotated normal.
+    // Map the local closest point normal*scaler to world space and recompute
+    // the signed distance for the rotated normal.
     Vector3f localPoint = Vector3f(m_localNormal * m_localScaler);
     Vector3f worldPoint = Vector3f(t.GetTransformation().Transform(localPoint));
     float worldScaler = worldNormal.Dot(worldPoint);
@@ -81,17 +72,14 @@ Plane PlaneCollider::getWorldPlane() const {
     return Plane(worldNormal, worldScaler);
 }
 
-// -------------------------------------------------------------------
-// OBBCollider
 OBBCollider::OBBCollider(const Vector3f& localHalfExtents,
                          const Vector3f& localCenter)
     : m_localHalfExtents(localHalfExtents), m_localCenter(localCenter) {}
 
 OBB OBBCollider::getWorldOBB() const {
     const Transform& t = GetTransform();
-    // Center maps through the full model matrix; half-extents scale uniformly;
-    // orientation is the entity's world rotation (so the box actually rotates
-    // with the entity instead of being refit axis-aligned like AABBCollider).
+    // Center maps through the model matrix, half extents scale uniformly, and
+    // orientation is the entity's world rotation.
     Vector3f worldCenter =
         Vector3f(t.GetTransformation().Transform(m_localCenter));
     Vector3f worldHalfExtents = Vector3f(m_localHalfExtents * t.GetScale());

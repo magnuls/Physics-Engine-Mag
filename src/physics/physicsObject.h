@@ -8,46 +8,33 @@
 #include "obb.h"
 #include "plane.h"
 
-// A single simulated rigid body for the physics engine.
-//
-// A PhysicsObject owns its own shape params plus a position and velocity, and
-// builds the world-space collider on demand. Self-contained: it doesn't depend
-// on the Transform-driven collider components. PhysicsObjectComponent copies the
-// simulated position back onto an Entity's Transform each frame.
-//
-// Motion is semi-implicit (symplectic) Euler. Inverse mass 0 = static: never
-// integrated, never moved by a collision (ground plane, walls, immovable boxes).
+// A single rigid body: shape params plus position and velocity, building its
+// world-space collider on demand. Semi-implicit Euler; inverse mass 0 is static.
 namespace Physics {
 
-// Runtime shape tag, kept independent of ColliderType so the two layers decouple.
+// Runtime shape tag, separate from ColliderType.
 enum class ShapeKind { SPHERE, BOX, PLANE, OBB };
 
-// World-space collider variant fed to the narrow-phase collision<A,B>() dispatch.
-// Every {Sphere,Box,Plane,OBB} pair has a collision<>() specialization (OBB ones
-// live in obbCollision).
+// Collider variant fed to the narrow-phase collision dispatch.
 using WorldShape = std::variant<BoundingSphere, AABB, Plane, OBB>;
 
 class PhysicsObject {
    public:
-    // A dynamic sphere centered at `center`.
     static PhysicsObject Sphere(const Vector3f& center, float radius,
                                 const Vector3f& velocity = Vector3f(0, 0, 0),
                                 float invMass = 1.0f);
 
-    // A dynamic axis-aligned box spanning [min, max].
     static PhysicsObject Box(const Vector3f& min, const Vector3f& max,
                              const Vector3f& velocity = Vector3f(0, 0, 0),
                              float invMass = 1.0f);
 
-    // A static (immovable) plane in Hesse form (unit-ish normal + scalar).
-    // `friction` is the plane's Coulomb coefficient. Since pairs combine as
-    // sqrt(muA*muB), a friction-0 floor zeroes all ground friction, so it's
-    // worth setting here. Default 0 keeps existing call sites unchanged.
+    // Static plane in Hesse form. friction is its Coulomb coefficient; a
+    // 0-friction floor zeroes all ground friction, since pairs combine as
+    // sqrt(muA*muB).
     static PhysicsObject StaticPlane(const Vector3f& normal, float scaler,
                                      float friction = 0.0f);
 
-    // A dynamic oriented (rotatable) box. Orientation is fixed for its lifetime
-    // — this first pass integrates position only, no angular velocity/torque.
+    // Dynamic oriented box with fixed orientation; integrates position only.
     static PhysicsObject OrientedBox(
         const Vector3f& center, const Vector3f& halfExtents,
         const Quaternion& orientation,
@@ -56,9 +43,9 @@ class PhysicsObject {
     // Advance one fixed step: v += g*dt; pos += v*dt. No-op if static.
     void Integrate(float delta, const Vector3f& gravity);
 
-    // World-space collider at the current position (for the narrow phase).
+    // World-space collider for the narrow phase.
     WorldShape GetWorldShape() const;
-    // Conservative world-space bound (for the broad phase).
+    // World-space bound for the broad phase.
     AABB GetWorldAABB() const;
 
     const Vector3f& GetPosition() const { return m_position; }
@@ -71,16 +58,12 @@ class PhysicsObject {
         WakeUp();
     }
     float GetInvMass() const { return m_invMass; }
-    // Coulomb friction coefficient (>= 0). Default 0 = frictionless, which
-    // preserves the engine's physically-neutral defaults; scenes/tests dial it
-    // up. The solver combines a pair's coefficients as sqrt(muA * muB).
+    // Coulomb friction coefficient, default 0. Pairs combine as sqrt(muA*muB).
     float GetFriction() const { return m_friction; }
     void SetFriction(float mu) { m_friction = mu; }
 
-    // Per-body drag applied during integration, Bullet form v *= 1/(1 + d*dt)
-    // (unconditionally stable). Angular damping acts as rolling resistance so a
-    // rolling/spinning body bleeds energy and eventually sleeps. Default 0 = no
-    // drag; scenes dial it up, usually angular > linear.
+    // Per-body drag in Integrate, form v *= 1/(1 + d*dt). Angular damping acts
+    // as rolling resistance so spinning bodies come to rest. Default 0.
     void SetLinearDamping(float d) { m_linearDamping = d; }
     float GetLinearDamping() const { return m_linearDamping; }
     void SetAngularDamping(float d) { m_angularDamping = d; }
@@ -89,18 +72,13 @@ class PhysicsObject {
     bool IsStatic() const { return m_invMass == 0.0f; }
     bool IsPlane() const { return m_kind == ShapeKind::PLANE; }
 
-    // --- CCD (continuous collision detection) opt-in ------------------------
-    // A continuous body gets speculative contacts: its broad-phase bound is
-    // swept forward by one step's travel, and the solver stops it closing more
-    // than the current gap in a single step, so a fast mover can't tunnel thin
-    // geometry. Default off.
+    // CCD opt-in. A continuous body sweeps its broad-phase bound forward so a
+    // fast mover is stopped before it tunnels thin geometry. Default off.
     void SetContinuous(bool on) { m_continuous = on; }
     bool IsContinuous() const { return m_continuous; }
     ShapeKind GetShapeKind() const { return m_kind; }
 
-    // --- Sleeping ------------------------------------------------------------
-    // A sleeping body is skipped by integration and the solver until woken (by
-    // contact with an awake body, WakeUp(), or an external velocity change).
+    // A sleeping body is skipped by integration and the solver until woken.
     // Only the engine sleeps a body, and only when sleeping is enabled.
     bool IsAwake() const { return m_awake; }
     void WakeUp() {
@@ -108,7 +86,6 @@ class PhysicsObject {
         m_sleepTime = 0.0f;
     }
 
-    // --- Rotational state (angular dynamics) --------------------------------
     const Quaternion& GetOrientation() const { return m_orientation; }
     const Vector3f& GetAngularVelocity() const { return m_angularVelocity; }
     void SetAngularVelocity(const Vector3f& w) {
@@ -116,24 +93,17 @@ class PhysicsObject {
         WakeUp();  // external change wakes a sleeping body
     }
 
-    // Apply this body's inverse inertia tensor to a world-space vector (e.g. a
-    // torque r x J). Sphere inertia is isotropic; the OBB tensor rotates with
-    // the box. Static bodies (and axis-aligned BOX, which stays unrotated)
-    // return the zero vector, so they never spin.
+    // Apply the world inverse inertia tensor to a vector such as a torque.
+    // Zero for static bodies, axis-aligned BOX and planes, so they never spin.
     Vector3f ApplyInverseInertia(const Vector3f& worldVec) const;
 
-    // Half-width of this shape projected onto the unit direction n (its
-    // "support radius"): sphere -> radius; box/OBB -> sum of half-extents *
-    // |axis . n|. The engine uses this to recover a consistent penetration
-    // depth for positional correction, since the detector's `distance` field
-    // does not mean penetration uniformly across shape pairs. Planes return 0
-    // (handled specially — a plane is static and positionally fixed).
+    // Half-width of the shape projected onto unit direction n.
+    // Used to recover penetration depth; planes return 0.
     float SupportRadius(const Vector3f& n) const;
 
    private:
-    // The engine owns the sleep/island bookkeeping: it writes m_awake/
-    // m_sleepTime and, when applying solver impulses, m_velocity/
-    // m_angularVelocity directly, bypassing the waking public setters.
+    // The engine owns the sleep and island bookkeeping and writes velocities
+    // and sleep state directly through this friend, bypassing the waking setters.
     friend class PhysicsEngine;
 
     // Fills m_invInertiaLocal from the shape, dimensions and inverse mass.
@@ -146,7 +116,7 @@ class PhysicsObject {
     float m_friction{0.0f};    // Coulomb coefficient, 0 = frictionless
     float m_linearDamping{0.0f};   // 1/s, 0 = no drag
     float m_angularDamping{0.0f};  // 1/s, 0 = no drag
-    bool m_continuous{false};  // CCD opt-in (speculative contacts)
+    bool m_continuous{false};  // CCD opt-in
     bool m_awake{true};        // false = engine put this body to sleep
     float m_sleepTime{0.0f};   // seconds spent below sleep thresholds
 
@@ -154,11 +124,11 @@ class PhysicsObject {
     Vector3f m_halfExtents{0, 0, 0};       // BOX, OBB
     Vector3f m_planeNormal{0, 1, 0};       // PLANE
     float m_planeScaler{0.0f};             // PLANE
-    Quaternion m_orientation{0, 0, 0, 1};  // OBB (and integrated rotation)
+    Quaternion m_orientation{0, 0, 0, 1};  // OBB and integrated rotation
 
     Vector3f m_angularVelocity{0, 0, 0};  // rad/s, world space
-    // Diagonal of the LOCAL inverse inertia tensor (principal axes). Zero for
-    // static bodies, planes, and axis-aligned BOX (which does not rotate).
+    // Diagonal of the local inverse inertia tensor, principal axes.
+    // Zero for static bodies, planes and axis-aligned BOX.
     Vector3f m_invInertiaLocal{0, 0, 0};
 };
 

@@ -7,9 +7,9 @@
 
 using namespace Physics;
 
-// --- Integration ------------------------------------------------------------
+// Integration
 
-// Semi-implicit Euler: v += g*dt first, then pos += v*dt.
+// Semi implicit Euler: v += g*dt first, then pos += v*dt.
 TEST(PhysicsEngineTest, GravityIntegration) {
     PhysicsObject o = PhysicsObject::Sphere(Vector3f(0, 10, 0), 1.0f);
     o.Integrate(0.5f, Vector3f(0, -10, 0));
@@ -18,7 +18,7 @@ TEST(PhysicsEngineTest, GravityIntegration) {
     EXPECT_NEAR(o.GetPosition().GetY(), 7.5f, 1e-4f);
 }
 
-// A static body (invMass 0) is never integrated.
+// A static body with invMass 0 is never integrated.
 TEST(PhysicsEngineTest, StaticBodyDoesNotMove) {
     PhysicsObject plane = PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f);
     plane.Integrate(1.0f, Vector3f(0, -10, 0));
@@ -47,25 +47,25 @@ TEST(PhysicsEngineTest, SimulateAdvancesOnlyDynamicBodies) {
     EXPECT_TRUE(engine.GetObject(floor).IsStatic());
 }
 
-// --- Response ---------------------------------------------------------------
+// Response
 
 // A sphere sinking into a static floor plane has its velocity reflected upward.
 TEST(PhysicsEngineTest, SphereBouncesOffStaticPlane) {
     PhysicsEngine engine;
-    // Sphere (index 0) overlapping the plane y=0: center y=0.5, r=1, falling.
+    // Sphere index 0 overlapping the plane y=0: center y=0.5, r=1, falling.
     engine.AddObject(
         PhysicsObject::Sphere(Vector3f(0, 0.5f, 0), 1.0f, Vector3f(0, -5, 0)));
-    // Static floor (index 1), plane y = 0, normal up.
+    // Static floor index 1, plane y = 0, normal up.
     engine.AddObject(PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
 
     engine.HandleCollisions();
 
     const Vector3f& v = engine.GetObject(0).GetVelocity();
     EXPECT_GT(v.GetY(), 0.0f);           // now moving up
-    EXPECT_NEAR(v.GetY(), 5.0f, 1e-3f);  // speed preserved (restitution = 1)
+    EXPECT_NEAR(v.GetY(), 5.0f, 1e-3f);  // speed preserved, restitution = 1
 }
 
-// Two dynamic spheres approaching head-on both reverse.
+// Two dynamic spheres approaching head on both reverse.
 TEST(PhysicsEngineTest, TwoSpheresReflectHeadOn) {
     PhysicsEngine engine;
     engine.AddObject(
@@ -79,7 +79,7 @@ TEST(PhysicsEngineTest, TwoSpheresReflectHeadOn) {
     EXPECT_NEAR(engine.GetObject(1).GetVelocity().GetX(), 3.0f, 1e-3f);
 }
 
-// Overlapping but SEPARATING spheres are not re-reflected (no jitter).
+// Overlapping but SEPARATING spheres are not reflected again, so no jitter.
 TEST(PhysicsEngineTest, SeparatingSpheresAreNotReflected) {
     PhysicsEngine engine;
     engine.AddObject(
@@ -94,9 +94,9 @@ TEST(PhysicsEngineTest, SeparatingSpheresAreNotReflected) {
     EXPECT_NEAR(engine.GetObject(1).GetVelocity().GetX(), 3.0f, 1e-3f);
 }
 
-// The Entity/Component bridges construct and expose their engine. (Driving
-// Update() needs a live Entity parent; here we just verify the wiring compiles
-// and the owned engine is reachable for setup.)
+// The Entity and Component bridges construct and expose their engine. Driving
+// Update needs a live Entity parent, so here we just verify the wiring compiles
+// and the engine is reachable for setup.
 TEST(PhysicsEngineTest, ComponentBridgesWireUp) {
     PhysicsEngineComponent engineComp;
     std::size_t idx = engineComp.GetPhysicsEngine().AddObject(
@@ -110,8 +110,8 @@ TEST(PhysicsEngineTest, ComponentBridgesWireUp) {
         1e-6f);
 }
 
-// A far-away body is left untouched while a near pair resolves (whole
-// pipeline).
+// A far away body is left untouched while a near pair resolves through the
+// whole pipeline.
 TEST(PhysicsEngineTest, DistantBodyUnaffected) {
     PhysicsEngine engine;
     engine.AddObject(

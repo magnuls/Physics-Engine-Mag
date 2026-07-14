@@ -1,23 +1,14 @@
 #pragma once
 #include "../core/math3d.h"
 
-// Holds the data if we have intersected and distance between the objects.
-//
-// Extended with a contact manifold: a unit collision normal and a
-// representative world-space contact point, so collision RESPONSE (pushing
-// objects apart / applying impulses) can be built on top of detection.
-//
-// Convention: m_normal points from the FIRST shape (A) toward the SECOND (B)
-// in a collision<A, B>(a, b) query, and has unit length when m_doesIntersect.
-// distance keeps its original meaning per pair (separation on a miss,
-// penetration depth on a hit); the legacy 2-arg ctor is preserved so existing
-// callers/tests are unaffected (normal/contact default to zero).
+// Result of a collision query: intersect flag, distance, and a contact manifold.
+// distance is separation on a miss or penetration depth on a hit.
 namespace Physics {
 struct IntersectData {
     float distance;
     bool m_doesIntersect;
     Vector3f m_normal;        // unit contact normal, from A toward B
-    Vector3f m_contactPoint;  // representative world-space contact point
+    Vector3f m_contactPoint;  // representative world contact point
 
     IntersectData(bool doesIntersect, float dist)
         : distance(dist),

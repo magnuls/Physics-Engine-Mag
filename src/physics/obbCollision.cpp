@@ -6,15 +6,14 @@
 
 #include "contactPoints.h"
 
-// OBB narrow-phase collision. Every result follows the shared convention:
-// m_normal points from the first shape (A) toward the second (B), unit on a hit;
-// `distance` is the separation gap on a miss and the penetration depth on a hit.
+// OBB narrow-phase collision. m_normal points from shape A toward shape B, unit on
+// a hit; distance is the separation gap on a miss or penetration depth on a hit.
 namespace Physics {
 namespace {
 
 constexpr float kEps = 1e-6f;
 
-// An OBB unpacked into center, unit axes and half-extents for fast math.
+// An OBB unpacked into center, unit axes and half-extents.
 struct Frame {
     Vector3f c;
     Vector3f axis[3];
@@ -33,7 +32,7 @@ Frame unpack(const OBB& o) {
     return f;
 }
 
-// An AABB is an OBB with identity orientation (axis-aligned).
+// An AABB is an OBB with identity orientation.
 OBB fromAABB(const AABB& b) {
     Vector3f center{(b.getMin() + b.getMax()) / 2.0f};
     Vector3f half{(b.getMax() - b.getMin()) / 2.0f};
@@ -47,14 +46,12 @@ float radius(const Frame& f, const Vector3f& n) {
            f.e[2] * std::abs(f.axis[2].Dot(n));
 }
 
-// Separating Axis Theorem for two OBBs. Scans all 15 candidate axes (2x3 face
-// normals + 9 edge-edge cross products) and keeps the axis of MAXIMUM
-// separation. Disjoint iff that maximum is positive. That same axis gives the
-// contact normal and, negated, the penetration depth.
+// SAT for two OBBs: scan 15 candidate axes and keep the axis of maximum
+// separation. Disjoint iff that max is positive; that axis is the contact normal.
 IntersectData satObbObb(const OBB& A, const OBB& B) {
     const Frame a{unpack(A)};
     const Frame b{unpack(B)};
-    const Vector3f t{b.c - a.c};  // A -> B
+    const Vector3f t{b.c - a.c};  // A toward B
 
     Vector3f candidates[15];
     candidates[0] = a.axis[0];
@@ -73,7 +70,7 @@ IntersectData satObbObb(const OBB& A, const OBB& B) {
 
     for (int i = 0; i < 15; ++i) {
         float len = candidates[i].Length();
-        if (len < kEps) continue;  // degenerate (parallel edges) — not an axis
+        if (len < kEps) continue;  // degenerate parallel edges, not an axis
         Vector3f n{candidates[i] / len};
         float sep = std::abs(t.Dot(n)) - (radius(a, n) + radius(b, n));
         if (sep > bestSep) {
@@ -86,12 +83,8 @@ IntersectData satObbObb(const OBB& A, const OBB& B) {
     if (t.Dot(bestAxis) < 0.0f) bestAxis = bestAxis * -1.0f;
 
     bool hit = bestSep <= 0.0f;
-    // Contact point on the touching surfaces: midpoint of A's furthest point
-    // toward B and B's furthest point toward A along the contact axis. For a
-    // face-face contact the zero-dot axes fall back to face centers, so a
-    // resting box gets a stable centered contact; an edge/corner contact returns
-    // the actual corner — that off-center lever arm is what makes a box landing
-    // on a corner tip.
+    // Contact point: midpoint of the two facing support points. An edge or corner
+    // contact returns the real corner, giving the lever arm that lets a box tip.
     Vector3f pa{obbSupportPoint(a.c, Vector3f(a.e[0], a.e[1], a.e[2]),
                                 a.axis[0], a.axis[1], a.axis[2], bestAxis)};
     Vector3f pb{obbSupportPoint(b.c, Vector3f(b.e[0], b.e[1], b.e[2]),
@@ -116,7 +109,7 @@ IntersectData collision<OBB, AABB>(const OBB& a, const AABB& b) {
 template <>
 IntersectData collision<AABB, OBB>(const AABB& a, const OBB& b) {
     IntersectData inter{satObbObb(fromAABB(a), b)};
-    return inter;  // A=box(as OBB) -> B=obb already correct
+    return inter;  // already oriented box to obb, no flip needed
 }
 
 template <>
@@ -134,8 +127,8 @@ IntersectData collision<OBB, BoundingSphere>(const OBB& a,
     Vector3f diff{b.getCenter() - closest};
     float len{diff.Length()};
 
-    // Normal points from box (A) toward sphere (B). When the sphere center is
-    // inside the box, fall back to the nearest local face's outward normal.
+    // Normal points from box toward sphere. If the sphere center is inside the
+    // box, fall back to the nearest face's outward normal.
     Vector3f normal;
     if (len > kEps) {
         normal = diff / len;
@@ -157,7 +150,7 @@ template <>
 IntersectData collision<BoundingSphere, OBB>(const BoundingSphere& a,
                                              const OBB& b) {
     IntersectData inter{collision<OBB, BoundingSphere>(b, a)};
-    inter.m_normal = inter.m_normal * -1.0f;  // flip to sphere -> box
+    inter.m_normal = inter.m_normal * -1.0f;  // flip to point from sphere to box
     return inter;
 }
 
@@ -169,13 +162,10 @@ IntersectData collision<OBB, Plane>(const OBB& a, const Plane& b) {
     float r{radius(f, n)};
     float signedDist{n.Dot(f.c) - normalized.getScaler()};
 
-    // From the box (A) toward the plane (B): opposite the side the center is
-    // on.
+    // From box toward plane, opposite the side the center is on.
     Vector3f normal{n * (signedDist >= 0 ? -1.0f : 1.0f)};
-    // Contact = the box point deepest toward the plane, not the center's
-    // projection: a tilted box contacts the floor at its corner, giving the
-    // off-center lever arm that lets it tip over and settle flat. A face-flat
-    // box still gets its face center (zero-dot axes fall back).
+    // Contact = the box point deepest toward the plane, so a tilted box contacts
+    // at its corner and gets the lever arm to tip over.
     Vector3f contact{obbSupportPoint(f.c, a.getHalfExtents(), f.axis[0],
                                      f.axis[1], f.axis[2], normal)};
     return IntersectData(std::abs(signedDist) <= r, std::abs(signedDist),
@@ -185,7 +175,7 @@ IntersectData collision<OBB, Plane>(const OBB& a, const Plane& b) {
 template <>
 IntersectData collision<Plane, OBB>(const Plane& a, const OBB& b) {
     IntersectData inter{collision<OBB, Plane>(b, a)};
-    inter.m_normal = inter.m_normal * -1.0f;  // flip to plane -> box
+    inter.m_normal = inter.m_normal * -1.0f;  // flip to point from plane to box
     return inter;
 }
 

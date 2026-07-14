@@ -112,10 +112,8 @@ void PhysicsObject::InitInertia() {
 }
 
 Vector3f PhysicsObject::ApplyInverseInertia(const Vector3f& worldVec) const {
-    // World tensor = R * Iinv_local * R^T. Rotate the vector into the body's
-    // local frame, scale by the principal inverse inertia, rotate back. For an
-    // isotropic sphere the rotation cancels; for an OBB the tensor tracks its
-    // orientation. Zero inverse inertia (static / BOX / plane) yields zero.
+    // World tensor R * Iinv_local * R^T: rotate into the local frame, scale by
+    // the principal inverse inertia, rotate back.
     Vector3f local{worldVec.Rotate(m_orientation.Conjugate())};
     Vector3f scaled(local.GetX() * m_invInertiaLocal.GetX(),
                     local.GetY() * m_invInertiaLocal.GetY(),
@@ -125,17 +123,15 @@ Vector3f PhysicsObject::ApplyInverseInertia(const Vector3f& worldVec) const {
 
 void PhysicsObject::Integrate(float delta, const Vector3f& gravity) {
     if (IsStatic()) return;
-    // Linear: semi-implicit Euler. Gravity acts at the center of mass, so no
-    // torque. Damping right after the velocity update, Bullet form 1/(1+d*dt):
-    // unconditionally stable (never negates the velocity) and a no-op at d=0.
+    // Semi-implicit Euler. Gravity acts at the center of mass, so no torque.
+    // Damping after the velocity update, Bullet form 1/(1+d*dt).
     m_velocity += gravity * delta;
     m_velocity *= 1.0f / (1.0f + m_linearDamping * delta);
     m_angularVelocity *= 1.0f / (1.0f + m_angularDamping * delta);
     m_position += m_velocity * delta;
 
-    // Angular: integrate the orientation from the angular velocity via the
-    // quaternion rate  dq/dt = 0.5 * (omega as a pure quaternion) * q, then
-    // renormalize to keep it a unit rotation.
+    // Integrate orientation from angular velocity, dq/dt = 0.5 * w * q,
+    // then renormalize to keep a unit quaternion.
     const Vector3f& w = m_angularVelocity;
     if (w.GetX() != 0.0f || w.GetY() != 0.0f || w.GetZ() != 0.0f) {
         Quaternion wq(w.GetX(), w.GetY(), w.GetZ(), 0.0f);
@@ -174,8 +170,8 @@ AABB PhysicsObject::GetWorldAABB() const {
         case ShapeKind::BOX:
             return AABB(m_position - m_halfExtents, m_position + m_halfExtents);
         case ShapeKind::OBB: {
-            // World bound of a rotated box: project its half-extents onto each
-            // world axis via the absolute values of its local axes' components.
+            // World bound of a rotated box: project the half-extents onto each
+            // world axis.
             Vector3f ax{m_orientation.GetRight()};
             Vector3f ay{m_orientation.GetUp()};
             Vector3f az{m_orientation.GetForward()};
@@ -192,8 +188,8 @@ AABB PhysicsObject::GetWorldAABB() const {
         }
         case ShapeKind::PLANE:
         default: {
-            // A plane is unbounded; give it a large finite bound so the broad
-            // phase always pairs it with finite bodies (conservative).
+            // A plane is unbounded, so give it a large finite bound for the
+            // broad phase.
             const float k = 1.0e6f;
             return AABB(Vector3f(-k, -k, -k), Vector3f(k, k, k));
         }
