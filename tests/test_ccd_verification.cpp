@@ -2,21 +2,23 @@
 
 // CCD-1 VERIFICATION (Agent 3) — written to the LOCKED API-REFERENCE.md §6
 // "CCD-1" contract BEFORE the implementation lands (interface-first workflow:
-// build the verification against the contract so it's ready the moment CCD ships).
+// build the verification against the contract so it's ready the moment CCD
+// ships).
 //
 // CCD is owned by Agent 1 (Fable 5): speculative contacts inside
 // HandleCollisions(), opt-in via PhysicsObject::SetContinuous(bool) (default
-// off) + optional PhysicsEngine::SetCcdSpeedThreshold(float). No IntersectData /
-// collision<>() change.
+// off) + optional PhysicsEngine::SetCcdSpeedThreshold(float). No IntersectData
+// / collision<>() change.
 //
-// ACTIVATION: until PhysicsObject::SetContinuous exists this file compiles as one
-// SKIPPED placeholder so `./unit_tests` stays green. When Agent 1 lands CCD-1,
-// flip PHYSICS_CCD_LANDED to 1 (and drop the #else placeholder) to activate the
-// tunnel/no-tunnel tests. (These bodies are written to the contract but have not
-// been compiled yet — expect to reconcile against the real symbols on activation.)
+// ACTIVATION: until PhysicsObject::SetContinuous exists this file compiles as
+// one SKIPPED placeholder so `./unit_tests` stays green. When Agent 1 lands
+// CCD-1, flip PHYSICS_CCD_LANDED to 1 (and drop the #else placeholder) to
+// activate the tunnel/no-tunnel tests. (These bodies are written to the
+// contract but have not been compiled yet — expect to reconcile against the
+// real symbols on activation.)
 //
-// ACTIVATED 2026-07-06 (Agent 3): CCD-1 landed (Agent 1) and the signatures match
-// the contract verbatim, so the real tests below are now live.
+// ACTIVATED 2026-07-06 (Agent 3): CCD-1 landed (Agent 1) and the signatures
+// match the contract verbatim, so the real tests below are now live.
 #define PHYSICS_CCD_LANDED 1
 
 #if PHYSICS_CCD_LANDED
@@ -54,9 +56,7 @@ void run(PhysicsEngine& e, int steps) {
 
 // Contract: continuous is OFF by default (so the whole existing suite is
 // unaffected).
-TEST(CcdVerify, DefaultsToOff) {
-    EXPECT_FALSE(fastBall().IsContinuous());
-}
+TEST(CcdVerify, DefaultsToOff) { EXPECT_FALSE(fastBall().IsContinuous()); }
 
 // Baseline (the bug CCD fixes): a fast ball with CCD OFF tunnels clean through
 // the static target — it ends up past the far side, never having collided.
@@ -64,11 +64,11 @@ TEST(CcdVerify, FastSphereTunnelsWithoutCcd) {
     PhysicsEngine e;
     e.SetGravity(Vector3f(0, 0, 0));
     e.SetRestitution(0.0f);
-    e.AddObject(fastBall());     // index 0, CCD off (default)
+    e.AddObject(fastBall());  // index 0, CCD off (default)
     e.AddObject(staticTarget());
     run(e, 4);
 
-    EXPECT_GT(e.GetObject(0).GetPosition().GetX(), 16.5f);  // past the target
+    EXPECT_GT(e.GetObject(0).GetPosition().GetX(), 16.5f);   // past the target
     EXPECT_GT(e.GetObject(0).GetVelocity().GetX(), 300.0f);  // never collided
 }
 
@@ -86,8 +86,10 @@ TEST(CcdVerify, FastSphereStoppedWithCcd) {
 
     // Measured on activation (2026-07-06): the speculative contact clamps the
     // ball to the contact surface exactly — x = 15 - 1 - 0.5 = 13.5, vx = 0.
-    EXPECT_NEAR(e.GetObject(0).GetPosition().GetX(), 13.5f, 0.2f);  // stops at contact
-    EXPECT_LT(std::fabs(e.GetObject(0).GetVelocity().GetX()), 1.0f);  // no pass-through
+    EXPECT_NEAR(e.GetObject(0).GetPosition().GetX(), 13.5f,
+                0.2f);  // stops at contact
+    EXPECT_LT(std::fabs(e.GetObject(0).GetVelocity().GetX()),
+              1.0f);  // no pass-through
 }
 
 // Optional engine knob: a body moving faster than the CCD speed threshold is
@@ -101,7 +103,8 @@ TEST(CcdVerify, SpeedThresholdAutoEnablesCcd) {
     e.AddObject(staticTarget());
     run(e, 4);
 
-    EXPECT_NEAR(e.GetObject(0).GetPosition().GetX(), 13.5f, 0.2f);  // auto-CCD stops at contact
+    EXPECT_NEAR(e.GetObject(0).GetPosition().GetX(), 13.5f,
+                0.2f);  // auto-CCD stops at contact
     EXPECT_LT(std::fabs(e.GetObject(0).GetVelocity().GetX()), 1.0f);
 }
 
@@ -127,9 +130,10 @@ TEST(CcdVerify, CcdOnLeavesNormalCollisionUnchanged) {
 
 // Placeholder so this file compiles and the suite stays green until CCD lands.
 TEST(CcdVerify, PendingCcdLanding) {
-    GTEST_SKIP() << "CCD-1 not landed (PhysicsObject::SetContinuous absent). "
-                    "Flip PHYSICS_CCD_LANDED to 1 in this file when Agent 1 "
-                    "lands CCD-1 to activate the tunnel/no-tunnel verification.";
+    GTEST_SKIP()
+        << "CCD-1 not landed (PhysicsObject::SetContinuous absent). "
+           "Flip PHYSICS_CCD_LANDED to 1 in this file when Agent 1 "
+           "lands CCD-1 to activate the tunnel/no-tunnel verification.";
 }
 
 #endif

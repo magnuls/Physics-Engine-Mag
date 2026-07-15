@@ -101,7 +101,7 @@ void PhysicsObject::InitInertia() {
                          3.0f * m_invMass / (hx * hx + hy * hy));
             break;
         }
-        case ShapeKind::BOX:    // axis-aligned box stays unrotated by design
+        case ShapeKind::BOX:  // axis-aligned box stays unrotated by design
         case ShapeKind::PLANE:
         default:
             m_invInertiaLocal = Vector3f(0, 0, 0);

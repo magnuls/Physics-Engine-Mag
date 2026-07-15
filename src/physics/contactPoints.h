@@ -6,15 +6,16 @@
 //
 // A believable angular response needs the contact point to sit on the actual
 // contact SURFACE, because the torque a contact applies is driven by its lever
-// arm r = contactPoint - centerOfMass. A volume-centroid contact gives the wrong
-// (often zero) lever arm; a support point on the touching face/edge/vertex gives
-// the right one. These helpers return that support point.
+// arm r = contactPoint - centerOfMass. A volume-centroid contact gives the
+// wrong (often zero) lever arm; a support point on the touching
+// face/edge/vertex gives the right one. These helpers return that support
+// point.
 namespace Physics {
 
 // Support point of an axis-aligned box: the point on the box furthest along
-// `dir`. Per axis: dir_i > 0 -> max_i, dir_i < 0 -> min_i, dir_i ~ 0 -> the face
-// center on that axis (so a flat/face contact returns the face center rather
-// than an arbitrary corner, which keeps the lever arm stable).
+// `dir`. Per axis: dir_i > 0 -> max_i, dir_i < 0 -> min_i, dir_i ~ 0 -> the
+// face center on that axis (so a flat/face contact returns the face center
+// rather than an arbitrary corner, which keeps the lever arm stable).
 inline Vector3f aabbSupportPoint(const AABB& box, const Vector3f& dir) {
     const Vector3f mn{box.getMin()};
     const Vector3f mx{box.getMax()};

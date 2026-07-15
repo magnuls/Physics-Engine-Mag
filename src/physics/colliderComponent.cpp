@@ -4,7 +4,8 @@
 
 namespace Physics {
 
-// ---------------------------------------------------------------- SphereCollider
+// ----------------------------------------------------------------
+// SphereCollider
 SphereCollider::SphereCollider(float radius, const Vector3f& localCenter)
     : m_localCenter(localCenter), m_localRadius(radius) {}
 
@@ -12,12 +13,14 @@ BoundingSphere SphereCollider::getWorldSphere() const {
     const Transform& t = GetTransform();
     // Full model matrix maps the local center to world space (handles
     // translation, rotation, scale and any parent transforms).
-    Vector3f worldCenter = Vector3f(t.GetTransformation().Transform(m_localCenter));
+    Vector3f worldCenter =
+        Vector3f(t.GetTransformation().Transform(m_localCenter));
     float worldRadius = m_localRadius * t.GetScale();
     return BoundingSphere(worldCenter, worldRadius);
 }
 
-// ------------------------------------------------------------------ AABBCollider
+// ------------------------------------------------------------------
+// AABBCollider
 AABBCollider::AABBCollider(const Vector3f& localMin, const Vector3f& localMax)
     : m_localMin(localMin), m_localMax(localMax) {}
 
@@ -56,7 +59,8 @@ AABB AABBCollider::getWorldAABB() const {
     return AABB(worldMin, worldMax);
 }
 
-// ----------------------------------------------------------------- PlaneCollider
+// -----------------------------------------------------------------
+// PlaneCollider
 PlaneCollider::PlaneCollider(const Vector3f& localNormal, float localScaler)
     : m_localNormal(localNormal), m_localScaler(localScaler) {}
 
@@ -77,7 +81,8 @@ Plane PlaneCollider::getWorldPlane() const {
     return Plane(worldNormal, worldScaler);
 }
 
-// ------------------------------------------------------------------- OBBCollider
+// -------------------------------------------------------------------
+// OBBCollider
 OBBCollider::OBBCollider(const Vector3f& localHalfExtents,
                          const Vector3f& localCenter)
     : m_localHalfExtents(localHalfExtents), m_localCenter(localCenter) {}

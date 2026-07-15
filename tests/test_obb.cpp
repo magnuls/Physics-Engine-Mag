@@ -17,7 +17,7 @@ static Quaternion rotZ(float deg) {
 // With identity orientation an OBB behaves exactly like an AABB.
 TEST(OBBTest, AxisAlignedMissAndHit) {
     OBB a(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
-    OBB far(Vector3f(3, 0, 0), Vector3f(1, 1, 1));   // gap 3-(1+1)=1
+    OBB far(Vector3f(3, 0, 0), Vector3f(1, 1, 1));      // gap 3-(1+1)=1
     OBB near(Vector3f(1.5f, 0, 0), Vector3f(1, 1, 1));  // pen 2-1.5=0.5
 
     IntersectData miss{collision<OBB, OBB>(a, far)};
@@ -27,7 +27,7 @@ TEST(OBBTest, AxisAlignedMissAndHit) {
 
     IntersectData hit{collision<OBB, OBB>(a, near)};
     EXPECT_TRUE(hit.m_doesIntersect);
-    EXPECT_NEAR(hit.distance, 0.5f, 1e-3f);          // penetration depth
+    EXPECT_NEAR(hit.distance, 0.5f, 1e-3f);  // penetration depth
     EXPECT_NEAR(hit.m_normal.GetX(), 1.0f, 1e-3f);
 }
 
@@ -55,7 +55,7 @@ TEST(OBBTest, RotatedReachChangesOverlap) {
 TEST(OBBTest, SphereClosestPoint) {
     OBB box(Vector3f(0, 0, 0), Vector3f(1, 1, 1));
 
-    BoundingSphere miss(Vector3f(2, 0, 0), 0.5);   // closest face at x=1, gap 1
+    BoundingSphere miss(Vector3f(2, 0, 0), 0.5);  // closest face at x=1, gap 1
     IntersectData r1{collision<OBB, BoundingSphere>(box, miss)};
     EXPECT_FALSE(r1.m_doesIntersect);
     EXPECT_NEAR(r1.distance, 1.0f, 1e-3f);
@@ -66,8 +66,8 @@ TEST(OBBTest, SphereClosestPoint) {
     EXPECT_TRUE(r2.m_doesIntersect);
     EXPECT_NEAR(r2.distance, 0.3f, 1e-3f);
 
-    // Rotated box: its +x corner sits at ~ (1.414, 0, 0); a sphere at x=1.6 r0.3
-    // just reaches it.
+    // Rotated box: its +x corner sits at ~ (1.414, 0, 0); a sphere at x=1.6
+    // r0.3 just reaches it.
     OBB rot(Vector3f(0, 0, 0), Vector3f(1, 1, 1), rotZ(45));
     BoundingSphere s(Vector3f(1.6f, 0, 0), 0.3);
     IntersectData r3{collision<OBB, BoundingSphere>(rot, s)};
@@ -102,8 +102,8 @@ TEST(OBBTest, PlaneProjectedRadius) {
     EXPECT_TRUE(r2.m_doesIntersect);
     EXPECT_NEAR(r2.distance, 0.5f, 1e-3f);
 
-    // Rotated 45 about Z: projected radius onto the floor normal grows to ~1.414,
-    // so a box whose center is 1.3 above the floor now touches it.
+    // Rotated 45 about Z: projected radius onto the floor normal grows to
+    // ~1.414, so a box whose center is 1.3 above the floor now touches it.
     OBB rot(Vector3f(0, 1.3f, 0), Vector3f(1, 1, 1), rotZ(45));
     IntersectData r3{collision<OBB, Plane>(rot, floor)};
     EXPECT_TRUE(r3.m_doesIntersect);  // 1.3 <= 1.414
@@ -125,9 +125,8 @@ TEST(OBBTest, VersusAABB) {
 // An oriented box falling onto the static floor bounces (velocity reflected).
 TEST(OBBTest, DropsAndBouncesOffPlane) {
     PhysicsEngine engine;
-    engine.AddObject(PhysicsObject::OrientedBox(Vector3f(0, 0.5f, 0),
-                                                Vector3f(1, 1, 1), rotZ(30),
-                                                Vector3f(0, -5, 0)));
+    engine.AddObject(PhysicsObject::OrientedBox(
+        Vector3f(0, 0.5f, 0), Vector3f(1, 1, 1), rotZ(30), Vector3f(0, -5, 0)));
     engine.AddObject(PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
 
     engine.HandleCollisions();
@@ -140,12 +139,13 @@ TEST(OBBTest, StacksOnStaticBox) {
     PhysicsEngine engine;
     engine.AddObject(PhysicsObject::OrientedBox(
         Vector3f(0, 1.5f, 0), Vector3f(1, 1, 1), Quaternion(0, 0, 0, 1),
-        Vector3f(0, -4, 0)));                                 // falling box
+        Vector3f(0, -4, 0)));  // falling box
     engine.AddObject(PhysicsObject::OrientedBox(
         Vector3f(0, 0, 0), Vector3f(1, 1, 1), Quaternion(0, 0, 0, 1),
-        Vector3f(0, 0, 0), /*invMass=*/0.0f));               // static base
+        Vector3f(0, 0, 0), /*invMass=*/0.0f));  // static base
 
     engine.HandleCollisions();
     EXPECT_GT(engine.GetObject(0).GetVelocity().GetY(), 0.0f);  // top rebounds
-    EXPECT_NEAR(engine.GetObject(1).GetVelocity().GetY(), 0.0f, 1e-6f);  // base still
+    EXPECT_NEAR(engine.GetObject(1).GetVelocity().GetY(), 0.0f,
+                1e-6f);  // base still
 }

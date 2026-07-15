@@ -10,8 +10,8 @@ namespace Physics {
 class OBB {
    private:
     Vector3f m_center;
-    Vector3f m_halfExtents;       // half-size along local x, y, z (all > 0)
-    Quaternion m_orientation;     // assumed unit; identity => axis-aligned
+    Vector3f m_halfExtents;    // half-size along local x, y, z (all > 0)
+    Quaternion m_orientation;  // assumed unit; identity => axis-aligned
 
    public:
     OBB(const Vector3f& center, const Vector3f& halfExtents,

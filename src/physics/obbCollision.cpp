@@ -143,8 +143,9 @@ IntersectData collision<OBB, BoundingSphere>(const OBB& a,
     } else {
         float toFace[6]{f.e[0] - l[0], f.e[0] + l[0], f.e[1] - l[1],
                         f.e[1] + l[1], f.e[2] - l[2], f.e[2] + l[2]};
-        Vector3f faces[6]{f.axis[0], f.axis[0] * -1.0f, f.axis[1],
-                          f.axis[1] * -1.0f, f.axis[2], f.axis[2] * -1.0f};
+        Vector3f faces[6]{f.axis[0], f.axis[0] * -1.0f,
+                          f.axis[1], f.axis[1] * -1.0f,
+                          f.axis[2], f.axis[2] * -1.0f};
         int best{0};
         for (int i = 1; i < 6; ++i)
             if (toFace[i] < toFace[best]) best = i;
@@ -169,7 +170,8 @@ IntersectData collision<OBB, Plane>(const OBB& a, const Plane& b) {
     float r{radius(f, n)};
     float signedDist{n.Dot(f.c) - normalized.getScaler()};
 
-    // From the box (A) toward the plane (B): opposite the side the center is on.
+    // From the box (A) toward the plane (B): opposite the side the center is
+    // on.
     Vector3f normal{n * (signedDist >= 0 ? -1.0f : 1.0f)};
     // Contact = the box point deepest toward the plane (A2 support point), not
     // the center's projection: a tilted box contacts the floor at its corner,
@@ -177,8 +179,8 @@ IntersectData collision<OBB, Plane>(const OBB& a, const Plane& b) {
     // A face-flat box still gets its face center (zero-dot axes fall back).
     Vector3f contact{obbSupportPoint(f.c, a.getHalfExtents(), f.axis[0],
                                      f.axis[1], f.axis[2], normal)};
-    return IntersectData(std::abs(signedDist) <= r, std::abs(signedDist), normal,
-                         contact);
+    return IntersectData(std::abs(signedDist) <= r, std::abs(signedDist),
+                         normal, contact);
 }
 
 template <>

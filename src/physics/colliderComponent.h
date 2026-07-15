@@ -1,12 +1,13 @@
 #pragma once
 
 // Collider components: wrap the standalone physics shapes
-// (Physics::BoundingSphere, Physics::AABB, Physics::Plane) as EntityComponents so a
-// collider is attached to an Entity and follows its Transform. Each component
-// stores the shape in the entity's LOCAL space and, on demand, produces the
-// corresponding WORLD-space shape by applying the entity's current Transform
-// (translation + rotation + scale + parent chain). This replaces the old model
-// where colliders were static value types that could not move with an entity.
+// (Physics::BoundingSphere, Physics::AABB, Physics::Plane) as EntityComponents
+// so a collider is attached to an Entity and follows its Transform. Each
+// component stores the shape in the entity's LOCAL space and, on demand,
+// produces the corresponding WORLD-space shape by applying the entity's current
+// Transform (translation + rotation + scale + parent chain). This replaces the
+// old model where colliders were static value types that could not move with an
+// entity.
 //
 // The shape value types and the collision<>() math are reused unchanged; this
 // file only adds the entity/transform wiring on top of them.
@@ -77,9 +78,10 @@ class PlaneCollider : public ColliderComponent {
     float m_localScaler;
 };
 
-// Oriented-box collider. Unlike AABBCollider (which refits to stay axis-aligned)
-// this carries the entity's rotation into the shape, so a rotated entity gets a
-// true oriented box. Half-extents are along the box's own local axes.
+// Oriented-box collider. Unlike AABBCollider (which refits to stay
+// axis-aligned) this carries the entity's rotation into the shape, so a rotated
+// entity gets a true oriented box. Half-extents are along the box's own local
+// axes.
 class OBBCollider : public ColliderComponent {
    public:
     OBBCollider(const Vector3f& localHalfExtents,

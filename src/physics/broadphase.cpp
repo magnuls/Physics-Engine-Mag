@@ -41,9 +41,8 @@ std::vector<std::pair<int, int>> Broadphase::sweepAndPrune(
     std::vector<int> active;
     for (int idx : order) {
         const float curMin{boxes[idx].getMin().GetX()};
-        std::erase_if(active, [&](int a) {
-            return boxes[a].getMax().GetX() < curMin;
-        });
+        std::erase_if(active,
+                      [&](int a) { return boxes[a].getMax().GetX() < curMin; });
         // Every still-active box overlaps on x; confirm the other two axes.
         for (int a : active)
             if (overlaps(boxes[a], boxes[idx])) {

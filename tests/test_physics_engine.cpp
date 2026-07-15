@@ -25,9 +25,9 @@ TEST(PhysicsEngineTest, StaticBodyDoesNotMove) {
     EXPECT_TRUE(plane.IsStatic());
     EXPECT_NEAR(plane.GetVelocity().GetY(), 0.0f, 1e-6f);
 
-    PhysicsObject box = PhysicsObject::Box(Vector3f(-1, -1, -1),
-                                           Vector3f(1, 1, 1),
-                                           Vector3f(0, 0, 0), /*invMass=*/0.0f);
+    PhysicsObject box =
+        PhysicsObject::Box(Vector3f(-1, -1, -1), Vector3f(1, 1, 1),
+                           Vector3f(0, 0, 0), /*invMass=*/0.0f);
     box.Integrate(1.0f, Vector3f(0, -10, 0));
     EXPECT_TRUE(box.IsStatic());
     EXPECT_NEAR(box.GetPosition().GetY(), 0.0f, 1e-6f);
@@ -38,7 +38,7 @@ TEST(PhysicsEngineTest, SimulateAdvancesOnlyDynamicBodies) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -10, 0));
     std::size_t sphere = engine.AddObject(
-        PhysicsObject::Sphere(Vector3f(0, 20, 0), 1.0f));            // dynamic
+        PhysicsObject::Sphere(Vector3f(0, 20, 0), 1.0f));  // dynamic
     std::size_t floor =
         engine.AddObject(PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
 
@@ -61,7 +61,7 @@ TEST(PhysicsEngineTest, SphereBouncesOffStaticPlane) {
     engine.HandleCollisions();
 
     const Vector3f& v = engine.GetObject(0).GetVelocity();
-    EXPECT_GT(v.GetY(), 0.0f);          // now moving up
+    EXPECT_GT(v.GetY(), 0.0f);           // now moving up
     EXPECT_NEAR(v.GetY(), 5.0f, 1e-3f);  // speed preserved (restitution = 1)
 }
 
@@ -110,15 +110,16 @@ TEST(PhysicsEngineTest, ComponentBridgesWireUp) {
         1e-6f);
 }
 
-// A far-away body is left untouched while a near pair resolves (whole pipeline).
+// A far-away body is left untouched while a near pair resolves (whole
+// pipeline).
 TEST(PhysicsEngineTest, DistantBodyUnaffected) {
     PhysicsEngine engine;
     engine.AddObject(
         PhysicsObject::Sphere(Vector3f(0, 0.5f, 0), 1.0f, Vector3f(0, -5, 0)));
     engine.AddObject(PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f));
     // Far dynamic sphere, nowhere near the floor contact.
-    engine.AddObject(
-        PhysicsObject::Sphere(Vector3f(100, 100, 100), 1.0f, Vector3f(1, 2, 3)));
+    engine.AddObject(PhysicsObject::Sphere(Vector3f(100, 100, 100), 1.0f,
+                                           Vector3f(1, 2, 3)));
 
     engine.HandleCollisions();
 

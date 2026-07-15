@@ -81,7 +81,7 @@ TEST(SleepTest, SetVelocityWakesAndBodyMoves) {
     engine.GetObject(0).SetVelocity(Vector3f(5, 0, 0));
     EXPECT_TRUE(engine.GetObject(0).IsAwake());
 
-    step(engine, 30);  // 0.5 s
+    step(engine, 30);                                           // 0.5 s
     EXPECT_GT(engine.GetObject(0).GetPosition().GetX(), 1.0f);  // rolling away
 }
 
@@ -128,13 +128,13 @@ TEST(SleepTest, IslandSleepsAndWakesTogether) {
     ASSERT_FALSE(engine.GetObject(1).IsAwake());
 
     // Throw a ball at the TOP box only.
-    engine.AddObject(PhysicsObject::Sphere(Vector3f(6, 3, 0), 0.5f,
-                                           Vector3f(-20, 0, 0)));
+    engine.AddObject(
+        PhysicsObject::Sphere(Vector3f(6, 3, 0), 0.5f, Vector3f(-20, 0, 0)));
     bool bothAwake = false;
     for (int i = 0; i < 60 && !bothAwake; ++i) {
         step(engine, 1);
-        bothAwake = engine.GetObject(0).IsAwake() &&
-                    engine.GetObject(1).IsAwake();
+        bothAwake =
+            engine.GetObject(0).IsAwake() && engine.GetObject(1).IsAwake();
     }
     EXPECT_TRUE(bothAwake);  // bottom box woke via the island, not the ball
 }

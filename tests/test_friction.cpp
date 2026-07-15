@@ -15,9 +15,8 @@ namespace {
 
 // A box resting exactly on the floor plane y=0, sliding along +x.
 PhysicsObject slidingBox(float vx, float mu) {
-    PhysicsObject box =
-        PhysicsObject::Box(Vector3f(-1, -0.005f, -1), Vector3f(1, 1.995f, 1),
-                           Vector3f(vx, 0, 0));
+    PhysicsObject box = PhysicsObject::Box(
+        Vector3f(-1, -0.005f, -1), Vector3f(1, 1.995f, 1), Vector3f(vx, 0, 0));
     box.SetFriction(mu);
     return box;
 }
@@ -74,7 +73,8 @@ TEST(FrictionTest, SlidingBoxDeceleratesToRestAtMuG) {
 
 // The friction impulse is clamped to the Coulomb cone |Jt| <= mu * Jn: a fast
 // slide with a gentle impact loses at most mu * (normal impulse) of tangent
-// momentum in that contact — it must NOT stop dead (that would need |Jt| >> cone).
+// momentum in that contact — it must NOT stop dead (that would need |Jt| >>
+// cone).
 TEST(FrictionTest, FrictionImpulseClampedToCoulombCone) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -130,8 +130,8 @@ TEST(FrictionTest, TwoBoxStackSettles) {
     engine.SetRestitution(0.0f);
     PhysicsObject bottom = PhysicsObject::Box(
         Vector3f(-1, 0.02f, -1), Vector3f(1, 2.02f, 1));  // dropped 2 cm up
-    PhysicsObject top = PhysicsObject::Box(Vector3f(-1, 2.1f, -1),
-                                           Vector3f(1, 4.1f, 1));
+    PhysicsObject top =
+        PhysicsObject::Box(Vector3f(-1, 2.1f, -1), Vector3f(1, 4.1f, 1));
     bottom.SetFriction(0.5f);
     top.SetFriction(0.5f);
     engine.AddObject(bottom);

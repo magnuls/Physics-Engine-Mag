@@ -115,12 +115,12 @@ class PhysicsObject {
     // return the zero vector, so they never spin.
     Vector3f ApplyInverseInertia(const Vector3f& worldVec) const;
 
-    // Half-width of this shape projected onto the unit direction n (its "support
-    // radius"): sphere -> radius; box/OBB -> sum of half-extents * |axis . n|.
-    // The engine uses this to recover a consistent penetration depth for
-    // positional correction, since the detector's `distance` field does not mean
-    // penetration uniformly across shape pairs. Planes return 0 (handled
-    // specially — a plane is static and positionally fixed).
+    // Half-width of this shape projected onto the unit direction n (its
+    // "support radius"): sphere -> radius; box/OBB -> sum of half-extents *
+    // |axis . n|. The engine uses this to recover a consistent penetration
+    // depth for positional correction, since the detector's `distance` field
+    // does not mean penetration uniformly across shape pairs. Planes return 0
+    // (handled specially — a plane is static and positionally fixed).
     float SupportRadius(const Vector3f& n) const;
 
    private:
@@ -134,21 +134,21 @@ class PhysicsObject {
     void InitInertia();
 
     ShapeKind m_kind{ShapeKind::SPHERE};
-    Vector3f m_position{0, 0, 0};      // sphere/box center; plane: unused
+    Vector3f m_position{0, 0, 0};  // sphere/box center; plane: unused
     Vector3f m_velocity{0, 0, 0};
-    float m_invMass{1.0f};             // 0 => static/immovable
-    float m_friction{0.0f};            // Coulomb coefficient, 0 = frictionless
-    bool m_continuous{false};          // CCD opt-in (speculative contacts)
-    bool m_awake{true};                // false = engine put this body to sleep
-    float m_sleepTime{0.0f};           // seconds spent below sleep thresholds
+    float m_invMass{1.0f};     // 0 => static/immovable
+    float m_friction{0.0f};    // Coulomb coefficient, 0 = frictionless
+    bool m_continuous{false};  // CCD opt-in (speculative contacts)
+    bool m_awake{true};        // false = engine put this body to sleep
+    float m_sleepTime{0.0f};   // seconds spent below sleep thresholds
 
-    float m_radius{0.0f};              // SPHERE
-    Vector3f m_halfExtents{0, 0, 0};   // BOX, OBB
-    Vector3f m_planeNormal{0, 1, 0};   // PLANE
-    float m_planeScaler{0.0f};         // PLANE
+    float m_radius{0.0f};                  // SPHERE
+    Vector3f m_halfExtents{0, 0, 0};       // BOX, OBB
+    Vector3f m_planeNormal{0, 1, 0};       // PLANE
+    float m_planeScaler{0.0f};             // PLANE
     Quaternion m_orientation{0, 0, 0, 1};  // OBB (and integrated rotation)
 
-    Vector3f m_angularVelocity{0, 0, 0};   // rad/s, world space
+    Vector3f m_angularVelocity{0, 0, 0};  // rad/s, world space
     // Diagonal of the LOCAL inverse inertia tensor (principal axes). Zero for
     // static bodies, planes, and axis-aligned BOX (which does not rotate).
     Vector3f m_invInertiaLocal{0, 0, 0};

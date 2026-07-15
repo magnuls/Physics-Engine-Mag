@@ -145,6 +145,6 @@ TEST(ColliderComponentTest, OBBOrientationTracksRotation) {
     entity.GetTransform()->Rotate(Vector3f(0, 0, 1), ToRadians(90.0f));
     Vector3f ax = box->getWorldOBB().axisX();
     EXPECT_NEAR(ax.Length(), 1.0f, 0.01f);  // still a unit axis
-    EXPECT_NEAR(ax.GetX(), 0.0f, 0.01f);     // rotated off world +x...
-    EXPECT_NEAR(ax.GetZ(), 0.0f, 0.01f);     // ...onto the world Y axis (+/-Y)
+    EXPECT_NEAR(ax.GetX(), 0.0f, 0.01f);    // rotated off world +x...
+    EXPECT_NEAR(ax.GetZ(), 0.0f, 0.01f);    // ...onto the world Y axis (+/-Y)
 }
