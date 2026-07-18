@@ -44,13 +44,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install clang-format
-        # Pinned to 18 so CI matches the version the files were formatted with
-        # locally (clang-format 18.1.x). An unpinned `clang-format` follows the
-        # runner's default and silently re-breaks this job when ubuntu-latest
-        # bumps its default LLVM — the #1 cause of "green locally, red in CI".
-        run: sudo apt-get update && sudo apt-get install -y clang-format-18
+        # Install the EXACT patch version (18.1.8) via pip, not apt. Ubuntu's
+        # `clang-format-18` package floats within the 18.1.x series, and older
+        # 18.1.x patches format some constructs (e.g. `{};` empty bodies)
+        # differently — which is why a file formatted with 18.1.8 locally was
+        # flagged by the runner's apt build. The pip wheel is the same everywhere,
+        # so CI now matches the version the files were formatted with, patch-exact.
+        # venv keeps it PEP 668-safe and off the system PATH.
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cf"
+          "$RUNNER_TEMP/cf/bin/pip" install --quiet "clang-format==18.1.8"
 
       - name: Check formatting
         run: |
           find src/physics tests -type f \( -name '*.cpp' -o -name '*.h' \) \
-            -print0 | xargs -0 clang-format-18 --dry-run --Werror
+            -print0 | xargs -0 "$RUNNER_TEMP/cf/bin/clang-format" --dry-run --Werror
