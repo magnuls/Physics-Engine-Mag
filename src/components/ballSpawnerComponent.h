@@ -97,6 +97,11 @@ class BallSpawnerComponent : public EntityComponent {
         // spin-up on impact is gentler. Spin still doesn't DECAY (no rolling
         // resistance in the solver) — flagged to Agent 1.
         ball.SetFriction(0.4f);
+        // DAMP-1 (Agent 2, user-authorized 2026-07-11): rolling resistance so a
+        // thrown ball's spin/roll decays and it comes to rest instead of spinning
+        // forever on contact. Matches the pre-placed demo bodies (0.4 / 0.05).
+        ball.SetAngularDamping(0.4f);
+        ball.SetLinearDamping(0.05f);
         std::size_t index = m_engine->AddObject(ball);
 
         // Reuse the held mesh/material (ref-counted copies) — no per-spawn name

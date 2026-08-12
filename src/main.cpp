@@ -148,7 +148,7 @@ void TestGame::Init(const Window& window) {
     // and come to rest instead of rolling/spinning forever (Agent 1's per-body
     // damping; engine default is 0 = off). Angular dominates so spin decays;
     // tiny linear so throws still travel.
-    const float kAngularDamping = 0.3f;
+    const float kAngularDamping = 0.4f;
     const float kLinearDamping = 0.05f;
     auto addSphere = [&](const Vector3f& pos, const char* material,
                          float friction) {
