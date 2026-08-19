@@ -82,11 +82,19 @@ class BallSpawnerComponent : public EntityComponent {
         const Vector3f aim = m_cameraTransform->GetRot().GetForward();
         const Vector3f velocity = aim * m_launchSpeed;
 
-        // Thrown balls are fast (launchSpeed ~20 m/s) — opt them into CCD so they
-        // can't tunnel through the floor / other bodies in one step (CCD-1).
         Physics::PhysicsObject ball =
             Physics::PhysicsObject::Sphere(pos, m_radius, velocity);
-        ball.SetContinuous(true);
+        // CCD is intentionally OFF here (was SetContinuous(true)). Removing it is
+        // the fix for the "spawned balls spin back like crazy on landing" report
+        // (2026-07-11): with CCD on, a fast ball's speculative FLOOR contact
+        // INJECTS energy — measured |v| exploding ~20 -> ~90 m/s and |w| to
+        // ~300 rad/s on the first bounce; CCD off, |v| stays ~20 and |w| peaks
+        // ~13. It only hit spawned balls because they're the only bodies that
+        // opted into CCD. And CCD isn't even needed at launchSpeed ~20 m/s
+        // (~0.33 m/step can't skip the floor plane or a ~2 m-wide body window).
+        // The underlying speculative-contact energy bug is Agent 1's
+        // (physicsEngine.cpp) — ESCALATED to Agent 0 (see §8). Re-enable CCD here
+        // once it's fixed, ideally gated on a real tunnel-risk speed.
         // PHYS-FEEL (Agent 2 cross-lane fix, user-authorized 2026-07-11): give
         // spawned balls friction so they grip the floor and roll/settle instead
         // of sliding forever. The solver combines friction as sqrt(fA*fB), so a
@@ -97,10 +105,15 @@ class BallSpawnerComponent : public EntityComponent {
         // spin-up on impact is gentler. Spin still doesn't DECAY (no rolling
         // resistance in the solver) — flagged to Agent 1.
         ball.SetFriction(0.4f);
-        // DAMP-1 (Agent 2, user-authorized 2026-07-11): rolling resistance so a
-        // thrown ball's spin/roll decays and it comes to rest instead of spinning
-        // forever on contact. Matches the pre-placed demo bodies (0.4 / 0.05).
-        ball.SetAngularDamping(0.4f);
+        // DAMP-1 rolling resistance. With CCD removed (above) the landing spin is
+        // already tame — measured peak |w| ~13 rad/s at launchSpeed 20, i.e. a
+        // normal fast roll, NOT the earlier "crazy" spin (which was the CCD bug).
+        // Angular damping now just governs how fast that roll-spin bleeds off as
+        // the ball slows: 2.0 settles it in ~5 s, 0.4 (the pre-placed value) lets
+        // it roll much longer. Kept higher than pre-placed because spawned balls
+        // land far faster than dropped ones. Scoped to spawned balls only.
+        // Linear damping 0.05 so the ball still rolls a bit before stopping.
+        ball.SetAngularDamping(2.0f);
         ball.SetLinearDamping(0.05f);
         std::size_t index = m_engine->AddObject(ball);
 
