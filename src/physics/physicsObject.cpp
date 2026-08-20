@@ -28,12 +28,14 @@ PhysicsObject PhysicsObject::Box(const Vector3f& min, const Vector3f& max,
     return o;
 }
 
-PhysicsObject PhysicsObject::StaticPlane(const Vector3f& normal, float scaler) {
+PhysicsObject PhysicsObject::StaticPlane(const Vector3f& normal, float scaler,
+                                         float friction) {
     PhysicsObject o;
     o.m_kind = ShapeKind::PLANE;
     o.m_invMass = 0.0f;  // planes are always immovable
     o.m_planeNormal = normal;
     o.m_planeScaler = scaler;
+    o.m_friction = friction;
     o.InitInertia();  // static -> zero inverse inertia
     return o;
 }
@@ -124,8 +126,12 @@ Vector3f PhysicsObject::ApplyInverseInertia(const Vector3f& worldVec) const {
 void PhysicsObject::Integrate(float delta, const Vector3f& gravity) {
     if (IsStatic()) return;
     // Linear: semi-implicit Euler. Gravity acts at the center of mass, so it
-    // applies no torque.
+    // applies no torque. Damping (DAMP-1) right after the velocity update, in
+    // the Bullet form 1/(1+d*dt) — unconditionally stable (never negates the
+    // velocity however large d*dt gets), and an exact no-op at d=0.
     m_velocity += gravity * delta;
+    m_velocity *= 1.0f / (1.0f + m_linearDamping * delta);
+    m_angularVelocity *= 1.0f / (1.0f + m_angularDamping * delta);
     m_position += m_velocity * delta;
 
     // Angular: integrate the orientation from the angular velocity via the
