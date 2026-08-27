@@ -84,17 +84,14 @@ class BallSpawnerComponent : public EntityComponent {
 
         Physics::PhysicsObject ball =
             Physics::PhysicsObject::Sphere(pos, m_radius, velocity);
-        // CCD is intentionally OFF here (was SetContinuous(true)). Removing it is
-        // the fix for the "spawned balls spin back like crazy on landing" report
-        // (2026-07-11): with CCD on, a fast ball's speculative FLOOR contact
-        // INJECTS energy — measured |v| exploding ~20 -> ~90 m/s and |w| to
-        // ~300 rad/s on the first bounce; CCD off, |v| stays ~20 and |w| peaks
-        // ~13. It only hit spawned balls because they're the only bodies that
-        // opted into CCD. And CCD isn't even needed at launchSpeed ~20 m/s
-        // (~0.33 m/step can't skip the floor plane or a ~2 m-wide body window).
-        // The underlying speculative-contact energy bug is Agent 1's
-        // (physicsEngine.cpp) — ESCALATED to Agent 0 (see §8). Re-enable CCD here
-        // once it's fixed, ideally gated on a real tunnel-risk speed.
+        // Opt thrown balls into CCD so they can't tunnel through thin geometry /
+        // other bodies in one step (CCD-1). This was briefly disabled (my d4d0db5)
+        // because CCD injected energy on fast floor landings ("spin back like
+        // crazy" — |v| 20->90, |w|->300); Agent 1 FIXED that speculative-contact
+        // bug (physicsEngine.cpp: speculative contacts are cold-started + skip
+        // friction), so it's re-enabled. Regression covered by
+        // CcdVerify.ContinuousFrictionalBallOnBouncyFloorStaysBounded.
+        ball.SetContinuous(true);
         // PHYS-FEEL (Agent 2 cross-lane fix, user-authorized 2026-07-11): give
         // spawned balls friction so they grip the floor and roll/settle instead
         // of sliding forever. The solver combines friction as sqrt(fA*fB), so a
