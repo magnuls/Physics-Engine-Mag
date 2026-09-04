@@ -2,14 +2,13 @@
 #include "../core/math3d.h"
 #include "aabb.h"
 
-// Contact-point helpers (A2 — contact-point quality, Agent 3).
+// Contact-point helpers.
 //
 // A believable angular response needs the contact point to sit on the actual
-// contact SURFACE, because the torque a contact applies is driven by its lever
+// contact surface, because the torque a contact applies is driven by its lever
 // arm r = contactPoint - centerOfMass. A volume-centroid contact gives the
-// wrong (often zero) lever arm; a support point on the touching
-// face/edge/vertex gives the right one. These helpers return that support
-// point.
+// wrong (often zero) lever arm; a support point on the touching face/edge/vertex
+// gives the right one. These helpers return that support point.
 namespace Physics {
 
 // Support point of an axis-aligned box: the point on the box furthest along
@@ -34,10 +33,8 @@ inline Vector3f aabbSupportPoint(const AABB& box, const Vector3f& dir) {
 // points with `dir` (dir . axis_i > 0), -h_i when against it, and 0 when
 // perpendicular (a face/edge contact stays centered on that axis).
 //
-// Provided for Agent 1's OBB narrow-phase (obbCollision.cpp), whose contact
-// point is a rough midpoint today — Agent 3 does not edit that file, so adopt
-// this there if useful. Example: the OBB contact vs a plane with outward normal
-// n is obbSupportPoint(center, half, ax, ay, az, -n).
+// Handy for the OBB narrow-phase contact point. Example: the OBB contact vs a
+// plane with outward normal n is obbSupportPoint(center, half, ax, ay, az, -n).
 inline Vector3f obbSupportPoint(const Vector3f& center,
                                 const Vector3f& halfExtents,
                                 const Vector3f& axisX, const Vector3f& axisY,

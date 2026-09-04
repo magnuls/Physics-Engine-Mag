@@ -7,12 +7,8 @@
 
 using namespace Physics;
 
-// Agent 3 VERIFICATION suite for Fable 5's (Agent 1) friction + sequential-
-// impulse solver. Independent of tests/test_friction.cpp (Agent 1's own suite):
-// this targets solver-SAFETY invariants and the warm-start/restitution
-// interplay Agent 1 flagged for extra eyes. It only exercises the public API —
-// it does not modify physicsEngine.cpp. A failure here is escalated to Agent 0,
-// not patched.
+// Extra checks for the friction + sequential-impulse solver: solver-safety
+// invariants and the warm-start / restitution interplay. Public API only.
 
 namespace {
 
@@ -31,13 +27,12 @@ void step(PhysicsEngine& e, int n, float dt = 1.0f / 60.0f) {
 
 }  // namespace
 
-// WARM-START / RESTITUTION SAFETY: the single most important invariant of an
-// iterative solver with warm starting is that it must never INJECT energy. An
+// Warm-start / restitution safety: the solver must never inject energy. An
 // elastic (e=1) ball bouncing on the floor must never rebound higher than it
-// started — stale warm-start impulses must self-correct, not accumulate.
+// started — stale warm-start impulses self-correct, they don't accumulate.
 TEST(FrictionVerify, ElasticBounceNeverGainsEnergy) {
     PhysicsEngine engine;
-    engine.SetRestitution(1.0f);  // perfectly elastic — worst case for gain
+    engine.SetRestitution(1.0f);  // perfectly elastic — worst case for energy gain
     const float startY = 4.0f;
     engine.AddObject(PhysicsObject::Sphere(Vector3f(0, startY, 0), 1.0f));
     engine.AddObject(floorPlane(0.0f));
@@ -57,14 +52,14 @@ TEST(FrictionVerify, ElasticBounceNeverGainsEnergy) {
     }
     // No energy gain: never rises meaningfully above where it began.
     EXPECT_LT(maxY, startY + 0.2f);
-    // But it DID bounce back up substantially (restitution + warm start didn't
-    // kill the bounce) — rules out the trivial "it just stuck to the floor".
+    // But it did bounce back up substantially — rules out the trivial "it just
+    // stuck to the floor".
     EXPECT_GT(maxYAfterContact, 3.0f);
 }
 
-// RESTITUTION THRESHOLD: approach speeds below kRestitutionThreshold (0.5 m/s)
-// are treated as e=0 to kill endless micro-bouncing. A ball released just above
-// the floor must SETTLE, not jitter; a fast one must still bounce.
+// Restitution threshold: approach speeds below 0.5 m/s are treated as e=0 to
+// kill endless micro-bouncing. A ball released just above the floor settles, a
+// fast one still bounces.
 TEST(FrictionVerify, RestitutionThresholdSettlesSlowContacts) {
     // Slow: dropped from ~2 cm up (impact << 0.5 m/s over the first steps) with
     // full elasticity set — the threshold must still bring it to rest.
@@ -87,9 +82,8 @@ TEST(FrictionVerify, RestitutionThresholdSettlesSlowContacts) {
     EXPECT_GT(fast.GetObject(0).GetVelocity().GetY(), 3.0f);  // ~+4 elastic
 }
 
-// STACK STABILITY: a resting box must neither sink through the floor
-// (penetration stays within the solver's slop) nor creep, over a long run.
-// Tighter bounds than Agent 1's TwoBoxStackSettles, checked at rest.
+// A resting box neither sinks through the floor (penetration stays within the
+// solver's slop) nor creeps, over a long run.
 TEST(FrictionVerify, RestingBoxDoesNotSinkOrCreep) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -110,8 +104,8 @@ TEST(FrictionVerify, RestingBoxDoesNotSinkOrCreep) {
     EXPECT_LT(std::fabs(engine.GetObject(0).GetVelocity().GetY()), 1e-2f);
 }
 
-// DEEPER STACK: three boxes stress the 8-iteration convergence more than two.
-// All three must settle at their resting heights and stop moving.
+// Three boxes stress the solver's convergence more than two — all three settle
+// at their resting heights and stop moving.
 TEST(FrictionVerify, ThreeBoxStackSettles) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -133,9 +127,8 @@ TEST(FrictionVerify, ThreeBoxStackSettles) {
             << "box " << i << " still moving";
 }
 
-// NO EXPLOSION: a messy overlapping pile with friction and restitution must
-// stay bounded — no NaN, no absurd velocities, nothing launched or tunnelled
-// far below the floor. This is the blunt "does the solver blow up" safety net.
+// A messy overlapping pile with friction and restitution stays bounded — no
+// NaN, no absurd velocities, nothing launched or tunnelled below the floor.
 TEST(FrictionVerify, OverlappingPileStaysBounded) {
     PhysicsEngine engine;
     engine.SetRestitution(0.3f);
@@ -160,10 +153,8 @@ TEST(FrictionVerify, OverlappingPileStaysBounded) {
     }
 }
 
-// DETERMINISM: the solver (incl. the index-keyed warm-start cache) must be
-// deterministic — identical setups produce bit-identical trajectories. Guards
-// against accidental reliance on unordered iteration order or uninitialised
-// state.
+// The solver (incl. the index-keyed warm-start cache) is deterministic —
+// identical setups produce bit-identical trajectories.
 TEST(FrictionVerify, SolverIsDeterministic) {
     auto build = [](PhysicsEngine& e) {
         e.SetRestitution(0.3f);

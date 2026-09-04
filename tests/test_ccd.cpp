@@ -7,9 +7,9 @@
 
 using namespace Physics;
 
-// CCD-1 — continuous collision detection via speculative contacts (contract in
-// API-REFERENCE.md §6). Default OFF: nothing changes unless a body opts in via
-// SetContinuous(true) or the engine's CcdSpeedThreshold is set.
+// Continuous collision detection via speculative contacts. Default off: nothing
+// changes unless a body opts in via SetContinuous(true) or the engine's
+// CcdSpeedThreshold is set.
 
 namespace {
 
@@ -36,8 +36,8 @@ void step(PhysicsEngine& engine, int n) {
 
 }  // namespace
 
-// Baseline (documents the problem): without CCD the sphere tunnels straight
-// through the wall — it ends up on the far side with its velocity untouched.
+// Without CCD the sphere tunnels straight through the wall — ends up on the far
+// side with its velocity untouched.
 TEST(CcdTest, FastSphereTunnelsWithoutCcd) {
     PhysicsEngine engine;
     buildTunnelScene(engine);
@@ -48,9 +48,9 @@ TEST(CcdTest, FastSphereTunnelsWithoutCcd) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 200.0f, 1e-3f);
 }
 
-// The contract case: the SAME scene with SetContinuous(true) does NOT tunnel —
-// the speculative contact caps the approach at gap/dt, the sphere lands on the
-// wall the next step and the real contact rebounds it.
+// The same scene with SetContinuous(true) does not tunnel — the speculative
+// contact caps the approach at gap/dt, the sphere lands on the wall the next
+// step and the real contact rebounds it.
 TEST(CcdTest, ContinuousSphereHitsThinWall) {
     PhysicsEngine engine;
     buildTunnelScene(engine);
@@ -64,8 +64,8 @@ TEST(CcdTest, ContinuousSphereHitsThinWall) {
     EXPECT_LT(engine.GetObject(0).GetVelocity().GetX(), 0.0f);  // rebounded
 }
 
-// The engine-level knob: with a speed threshold set (distance per step), fast
-// bodies are auto-treated as continuous without any per-body opt-in.
+// With a speed threshold set (distance per step), fast bodies are auto-treated
+// as continuous without any per-body opt-in.
 TEST(CcdTest, SpeedThresholdAutoCatchesFastBody) {
     PhysicsEngine engine;
     buildTunnelScene(engine);
@@ -95,16 +95,16 @@ TEST(CcdTest, SlowBodyUnaffectedByThreshold) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 2.0f, 1e-4f);
 }
 
-// Energy-injection regression (Agent 3's repro): a thrown CONTINUOUS ball
-// landing on a frictional floor under gravity must never GAIN energy. The bug:
-// warm-starting a speculative contact re-applied the previous real landing's
-// cached friction impulses with no speculative friction solve to correct them
-// — a free tangential kick at a long lever arm that pumped |v| ~20 -> ~90 and
-// |w| -> ~300 (sign-reversing) across bounces.
+// Energy-injection regression: a thrown continuous ball landing on a frictional
+// floor under gravity must never gain energy. The bug: warm-starting a
+// speculative contact re-applied the previous landing's cached friction
+// impulses with no speculative friction solve to correct them — a free
+// tangential kick at a long lever arm that pumped |v| ~20 -> ~90 and |w| -> ~300
+// (sign-reversing) across bounces.
 TEST(CcdTest, ContinuousLandingInjectsNoEnergy) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -9.81f, 0));
-    engine.SetRestitution(0.3f);  // demo-like: bouncy + frictional
+    engine.SetRestitution(0.3f);  // bouncy + frictional
     PhysicsObject ball = PhysicsObject::Sphere(Vector3f(0, 5, 0), 1.0f,
                                                Vector3f(20, -5, 0));  // thrown
     ball.SetFriction(0.5f);
@@ -128,8 +128,8 @@ TEST(CcdTest, ContinuousLandingInjectsNoEnergy) {
     EXPECT_GT(engine.GetObject(0).GetPosition().GetY(), 0.5f);
 }
 
-// Regression guard: CCD must not destabilize ordinary behavior — a continuous
-// ball dropped under gravity still settles on the floor like any other body.
+// CCD must not destabilize ordinary behavior — a continuous ball dropped under
+// gravity still settles on the floor like any other body.
 TEST(CcdTest, ContinuousBallStillSettlesOnFloor) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -9.81f, 0));

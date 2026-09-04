@@ -417,8 +417,8 @@ TEST(ContactManifold, PlaneAABB) {
     IntersectData pa{collision(floor, box)};            // A=plane, B=box
     EXPECT_TRUE(pa.m_doesIntersect);
     EXPECT_VEC_NEAR(pa.m_normal, 0, 1, 0);
-    // A2: contact is the box's support point toward the plane (bottom-face
-    // center at y=-1), on the box surface — not the box centroid (0,0,0).
+    // Contact is the box's support point toward the plane (bottom-face center
+    // at y=-1), on the box surface — not the box centroid (0,0,0).
     EXPECT_VEC_NEAR(pa.m_contactPoint, 0, -1, 0);
 
     IntersectData ap{collision(box, floor)};  // A=box, B=plane
@@ -427,9 +427,9 @@ TEST(ContactManifold, PlaneAABB) {
                     0);  // contact carries through swap
 }
 
-// A2 — the box-vs-plane contact point sits on the actual contact face, and its
-// x/z track the box so an off-center box gives an off-center (torque-producing)
-// lever arm for A1's angular Resolve.
+// The box-vs-plane contact point sits on the actual contact face, and its x/z
+// track the box so an off-center box gives an off-center (torque-producing)
+// lever arm for the angular response.
 TEST(ContactManifold, PlaneAABBSupportPoint) {
     Plane floor(Vector3f(0, 1, 0), 0);
 
@@ -444,7 +444,7 @@ TEST(ContactManifold, PlaneAABBSupportPoint) {
     EXPECT_VEC_NEAR(collision(floor, offset).m_contactPoint, 5, 0, 7);
 }
 
-// A2 — the reusable support-point helpers (also offered to Agent 1 for OBBs).
+// The reusable support-point helpers.
 TEST(ContactPoints, SupportHelpers) {
     AABB box(Vector3f(0, 0, 0), Vector3f(2, 4, 6));
     // Toward -y -> bottom face; x,z perpendicular -> face-centered.

@@ -7,9 +7,9 @@
 
 using namespace Physics;
 
-// P0 — friction + robust contact solver: Coulomb friction (tangent impulses
-// clamped to the friction cone), sequential-impulse iteration with warm
-// starting, and the A2 support-point contacts that let boxes tip on corners.
+// Friction + robust contact solver: Coulomb friction (tangent impulses clamped
+// to the friction cone), sequential-impulse iteration with warm starting, and
+// the support-point contacts that let boxes tip on corners.
 
 namespace {
 
@@ -151,11 +151,9 @@ TEST(FrictionTest, TwoBoxStackSettles) {
     EXPECT_LT(std::fabs(engine.GetObject(1).GetVelocity().GetY()), 0.1f);
 }
 
-// PHYS-FEEL regression (Round 4): friction is a PAIR property combined as
-// sqrt(muA*muB) — one frictionless side zeroes the pair. This is the exact
-// mechanism behind the "demo friction isn't working" report (the demo floor
-// had mu=0): a frictional box on a FRICTIONLESS floor slides freely. Pinned
-// here so the combine semantics can't drift silently.
+// Friction is a pair property combined as sqrt(muA*muB) — one frictionless side
+// zeroes the pair, so a frictional box on a frictionless floor slides freely.
+// Pinned here so the combine semantics can't drift silently.
 TEST(FrictionTest, OneSidedZeroFrictionSlidesFreely) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -170,8 +168,8 @@ TEST(FrictionTest, OneSidedZeroFrictionSlidesFreely) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 5.0f, 1e-3f);
 }
 
-// SP-FRIC: StaticPlane takes its friction at construction (contract test) —
-// the 2-arg form stays frictionless, so existing call sites are unchanged.
+// StaticPlane takes its friction at construction — the 2-arg form stays
+// frictionless, so existing call sites are unchanged.
 TEST(FrictionTest, StaticPlaneFrictionParam) {
     EXPECT_NEAR(
         PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.6f).GetFriction(),
@@ -181,8 +179,8 @@ TEST(FrictionTest, StaticPlaneFrictionParam) {
         1e-6f);
 }
 
-// PHYS-FEEL fix validation: the spec'd demo values (floor mu=0.6 vs body
-// mu=0.5 -> pair sqrt(0.30)~0.55) bring a 5 m/s slider to rest in ~1 s.
+// A frictional floor (mu=0.6) vs a body (mu=0.5) -> pair sqrt(0.30)~0.55 brings
+// a 5 m/s slider to rest in ~1 s.
 TEST(FrictionTest, FrictionalFloorStopsSliderDemoSpec) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -197,10 +195,9 @@ TEST(FrictionTest, FrictionalFloorStopsSliderDemoSpec) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 0.0f, 0.05f);
 }
 
-// A2 payoff (support-point contacts in obbCollision.cpp): an OBB landing on
-// the floor TILTED contacts at its corner, whose off-center lever arm produces
-// torque — the box starts tipping. (Center-projected contacts gave zero torque
-// here, which is exactly the limitation A1 logged.)
+// Support-point contacts: an OBB landing on the floor tilted contacts at its
+// corner, whose off-center lever arm produces torque — the box starts tipping.
+// (Center-projected contacts would give zero torque here.)
 TEST(FrictionTest, TiltedObbLandingOnPlaneStartsTipping) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);

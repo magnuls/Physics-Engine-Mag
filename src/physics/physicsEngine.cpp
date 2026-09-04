@@ -27,7 +27,7 @@ constexpr float kSlop = 0.005f;
 constexpr float kCorrectionPercent = 0.4f;
 
 // Tiny union-find over body indices, used to group contact-connected dynamic
-// bodies into islands that sleep/wake as one (SLEEP-1).
+// bodies into islands that sleep/wake as one.
 struct UnionFind {
     std::vector<int> parent;
     explicit UnionFind(std::size_t n) : parent(n) {
@@ -53,8 +53,8 @@ std::size_t PhysicsEngine::AddObject(const PhysicsObject& object) {
 void PhysicsEngine::Simulate(float delta) {
     if (delta > 0.0f) m_lastDelta = delta;
     for (auto& obj : m_objects) {
-        // A sleeping body is not integrated at all — no gravity accumulation,
-        // no motion, so it cannot sink while asleep (SLEEP-1).
+        // A sleeping body isn't integrated at all — no gravity, no motion, so it
+        // can't sink while asleep.
         if (m_sleepingEnabled && !obj.m_awake) continue;
         obj.Integrate(delta, m_gravity);
     }
@@ -80,10 +80,9 @@ Vector3f PhysicsEngine::ContactVelocity(const PhysicsObject& o,
 
 void PhysicsEngine::ApplyImpulse(PhysicsObject& o, const Vector3f& r,
                                  const Vector3f& impulse, float sign) {
-    // Direct member writes (friend), NOT the public setters: SetVelocity/
-    // SetAngularVelocity wake the body and reset its sleep timer, which would
-    // stop resting bodies from ever falling asleep (the solver nudges them
-    // every step). Waking is handled explicitly by the island wake pass.
+    // Direct member writes (friend), not the public setters: those wake the body
+    // and reset its sleep timer, so the solver's per-step nudges would keep
+    // resting bodies awake forever. Waking is handled by the island wake pass.
     Vector3f p{impulse * sign};
     o.m_velocity += p * o.GetInvMass();
     o.m_angularVelocity += o.ApplyInverseInertia(r.Cross(p));
@@ -159,14 +158,11 @@ bool PhysicsEngine::BuildContact(std::size_t ia, std::size_t ib,
 }
 
 void PhysicsEngine::WarmStart(Contact& c) {
-    // Speculative (CCD) contacts are excluded from warm starting entirely.
-    // They skip the friction solve, so a warm-started tangent impulse would
-    // never be corrected — after a real landing caches large friction
-    // impulses, re-applying them on the next step's speculative contact is a
-    // free kick at a long lever arm (the sphere-plane contact point sits on
-    // the plane, far below an airborne center), which pumped energy into
-    // bouncing CCD bodies (|v| 20->90, sign-reversing |w|). A cold-started
-    // speculative contact converges in one iteration anyway.
+    // Speculative (CCD) contacts skip warm starting. They also skip the friction
+    // solve, so a warm-started tangent impulse would never be corrected — reusing
+    // a real landing's cached friction on the next airborne speculative contact
+    // is a free kick at a long lever arm that pumps energy into bouncing bodies. A
+    // cold-started speculative contact converges in one iteration anyway.
     if (c.speculative) return;
     auto it = m_impulseCache.find({c.ia, c.ib});
     if (it == m_impulseCache.end()) return;
@@ -319,9 +315,9 @@ void PhysicsEngine::HandleCollisions() {
 
     // Broad phase: bound every body with an AABB, then cull to candidate
     // overlap pairs so the exact narrow phase only runs where it can matter.
-    // A CCD-active body's bound is SWEPT forward by one step's displacement so
-    // an about-to-happen pair is still reported even though the shapes don't
-    // overlap yet (speculative contacts, CCD-1).
+    // A CCD-active body's bound is swept forward by one step's displacement so an
+    // about-to-happen pair is still reported even though the shapes don't overlap
+    // yet (speculative contacts).
     std::vector<AABB> bounds;
     std::vector<bool> ccd(n);
     bounds.reserve(n);
@@ -373,9 +369,9 @@ void PhysicsEngine::HandleCollisions() {
             contacts.push_back(c);
     }
 
-    // SLEEP-1 wake pass (no-op when sleeping is disabled): islands touched by
-    // an awake body wake wholly, and contacts between still-sleeping bodies
-    // (or sleeping-vs-static) drop out of the solve below.
+    // Wake pass (no-op when sleeping is disabled): islands touched by an awake
+    // body wake wholly, and contacts between still-sleeping bodies (or
+    // sleeping-vs-static) drop out of the solve below.
     WakeIslands(contacts);
 
     // Warm start from last step's impulses, then iterate the velocity solver.
@@ -386,8 +382,8 @@ void PhysicsEngine::HandleCollisions() {
     // Positional correction after the velocity solve.
     for (const auto& c : contacts) CorrectPositions(c);
 
-    // SLEEP-1 sleep pass (no-op when disabled): rest timers advance on the
-    // post-solve velocities; an island sleeps once all its members qualify.
+    // Sleep pass (no-op when disabled): rest timers advance on the post-solve
+    // velocities; an island sleeps once all its members qualify.
     SleepIslands(contacts);
 
     // Remember this step's accumulated impulses for next-step warm starting.

@@ -5,8 +5,8 @@
 
 using namespace Physics;
 
-// SLEEP-1 — sleeping / islands (contract in API-REFERENCE.md §6). Master
-// switch defaults OFF: with sleeping disabled nothing changes anywhere.
+// Sleeping / islands. Master switch defaults off: with sleeping disabled
+// nothing changes anywhere.
 
 namespace {
 
@@ -29,8 +29,7 @@ void buildRestingBall(PhysicsEngine& engine) {
 
 }  // namespace
 
-// Default OFF: a fully settled body still reports awake (zero behavior change
-// unless a scene opts in).
+// With sleeping off, a fully settled body still reports awake.
 TEST(SleepTest, DisabledByDefaultNothingSleeps) {
     PhysicsEngine engine;
     buildRestingBall(engine);
@@ -40,8 +39,7 @@ TEST(SleepTest, DisabledByDefaultNothingSleeps) {
     EXPECT_TRUE(engine.GetObject(0).IsAwake());
 }
 
-// The core contract case: enabled, a settled body falls asleep (motion frozen,
-// resting height kept).
+// Enabled, a settled body falls asleep (motion frozen, resting height kept).
 TEST(SleepTest, SettledBodySleeps) {
     PhysicsEngine engine;
     engine.SetSleepingEnabled(true);
@@ -104,8 +102,8 @@ TEST(SleepTest, NewCollisionWakesSleepingBody) {
     EXPECT_TRUE(wokeUp);
 }
 
-// Islands: two stacked boxes sleep together, and a thrown ball hitting the TOP
-// box wakes BOTH (the wake propagates across the contact island).
+// Islands: two stacked boxes sleep together, and a thrown ball hitting the top
+// box wakes both (the wake propagates across the contact island).
 TEST(SleepTest, IslandSleepsAndWakesTogether) {
     PhysicsEngine engine;
     engine.SetSleepingEnabled(true);

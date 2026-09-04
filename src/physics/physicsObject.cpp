@@ -125,10 +125,9 @@ Vector3f PhysicsObject::ApplyInverseInertia(const Vector3f& worldVec) const {
 
 void PhysicsObject::Integrate(float delta, const Vector3f& gravity) {
     if (IsStatic()) return;
-    // Linear: semi-implicit Euler. Gravity acts at the center of mass, so it
-    // applies no torque. Damping (DAMP-1) right after the velocity update, in
-    // the Bullet form 1/(1+d*dt) — unconditionally stable (never negates the
-    // velocity however large d*dt gets), and an exact no-op at d=0.
+    // Linear: semi-implicit Euler. Gravity acts at the center of mass, so no
+    // torque. Damping right after the velocity update, Bullet form 1/(1+d*dt):
+    // unconditionally stable (never negates the velocity) and a no-op at d=0.
     m_velocity += gravity * delta;
     m_velocity *= 1.0f / (1.0f + m_linearDamping * delta);
     m_angularVelocity *= 1.0f / (1.0f + m_angularDamping * delta);

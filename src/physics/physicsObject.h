@@ -10,25 +10,21 @@
 
 // A single simulated rigid body for the physics engine.
 //
-// A PhysicsObject owns its own shape (as a small set of parameters) plus a
-// position and velocity, and it builds the corresponding *world-space* collider
-// on demand. It is deliberately SELF-CONTAINED: it does not depend on the
-// Entity/Transform-driven collider components (those are a separate layer). The
-// PhysicsObjectComponent bridge copies the simulated position back onto an
-// Entity's Transform each frame.
+// A PhysicsObject owns its own shape params plus a position and velocity, and
+// builds the world-space collider on demand. Self-contained: it doesn't depend
+// on the Transform-driven collider components. PhysicsObjectComponent copies the
+// simulated position back onto an Entity's Transform each frame.
 //
-// Motion is semi-implicit (symplectic) Euler. A body with inverse mass 0 is
-// STATIC: it is never integrated and is never moved by a collision response
-// (used for the ground plane, walls, immovable boxes, etc.).
+// Motion is semi-implicit (symplectic) Euler. Inverse mass 0 = static: never
+// integrated, never moved by a collision (ground plane, walls, immovable boxes).
 namespace Physics {
 
-// Runtime shape tag (kept independent of Agent 2's Physics::ColliderType so the
-// two layers stay decoupled).
+// Runtime shape tag, kept independent of ColliderType so the two layers decouple.
 enum class ShapeKind { SPHERE, BOX, PLANE, OBB };
 
-// The world-space collider variant fed to the narrow-phase collision<A,B>()
-// dispatch. Order matters only for std::visit; every {Sphere,Box,Plane,OBB}
-// pair has an explicit collision<>() specialization (OBB ones in obbCollision).
+// World-space collider variant fed to the narrow-phase collision<A,B>() dispatch.
+// Every {Sphere,Box,Plane,OBB} pair has a collision<>() specialization (OBB ones
+// live in obbCollision).
 using WorldShape = std::variant<BoundingSphere, AABB, Plane, OBB>;
 
 class PhysicsObject {
@@ -44,11 +40,9 @@ class PhysicsObject {
                              float invMass = 1.0f);
 
     // A static (immovable) plane in Hesse form (unit-ish normal + scalar).
-    // `friction` is the plane's Coulomb coefficient (SP-FRIC): the ground is
-    // the one body every scene has, and forgetting its friction silently
-    // zeroes ALL ground friction (pair combine is sqrt(muA*muB)) — taking it
-    // at construction makes that hard to miss. Default 0 keeps the engine's
-    // neutral defaults and existing call sites unchanged.
+    // `friction` is the plane's Coulomb coefficient. Since pairs combine as
+    // sqrt(muA*muB), a friction-0 floor zeroes all ground friction, so it's
+    // worth setting here. Default 0 keeps existing call sites unchanged.
     static PhysicsObject StaticPlane(const Vector3f& normal, float scaler,
                                      float friction = 0.0f);
 
@@ -70,9 +64,8 @@ class PhysicsObject {
     const Vector3f& GetPosition() const { return m_position; }
     void SetPosition(const Vector3f& p) { m_position = p; }
     const Vector3f& GetVelocity() const { return m_velocity; }
-    // External velocity changes WAKE a sleeping body (SLEEP-1 wake trigger).
-    // The engine's own solver writes velocities directly instead, so its
-    // resting-contact impulses don't keep resetting the sleep timer.
+    // Setting velocity wakes a sleeping body. The solver writes velocities
+    // directly instead, so resting-contact impulses don't reset the sleep timer.
     void SetVelocity(const Vector3f& v) {
         m_velocity = v;
         WakeUp();
@@ -84,12 +77,10 @@ class PhysicsObject {
     float GetFriction() const { return m_friction; }
     void SetFriction(float mu) { m_friction = mu; }
 
-    // Damping (DAMP-1): per-body drag applied during integration with the
-    // unconditionally-stable Bullet form v *= 1/(1 + d*dt). Angular damping is
-    // the rolling-resistance stand-in that lets a rolling/spinning body bleed
-    // energy, come to rest and finally sleep — without it, angular velocity
-    // only ever changes through contact impulses. Defaults 0 = no drag (the
-    // engine stays neutral; scenes dial it up, typically angular > linear).
+    // Per-body drag applied during integration, Bullet form v *= 1/(1 + d*dt)
+    // (unconditionally stable). Angular damping acts as rolling resistance so a
+    // rolling/spinning body bleeds energy and eventually sleeps. Default 0 = no
+    // drag; scenes dial it up, usually angular > linear.
     void SetLinearDamping(float d) { m_linearDamping = d; }
     float GetLinearDamping() const { return m_linearDamping; }
     void SetAngularDamping(float d) { m_angularDamping = d; }
@@ -99,20 +90,18 @@ class PhysicsObject {
     bool IsPlane() const { return m_kind == ShapeKind::PLANE; }
 
     // --- CCD (continuous collision detection) opt-in ------------------------
-    // A continuous body gets SPECULATIVE CONTACTS (see PhysicsEngine): its
-    // broad-phase bound is swept forward by one step's travel, and the solver
-    // stops it approaching another body by more than the current gap in a
-    // single step — so a fast mover cannot tunnel through thin geometry.
-    // Default off (zero behavior change unless enabled).
+    // A continuous body gets speculative contacts: its broad-phase bound is
+    // swept forward by one step's travel, and the solver stops it closing more
+    // than the current gap in a single step, so a fast mover can't tunnel thin
+    // geometry. Default off.
     void SetContinuous(bool on) { m_continuous = on; }
     bool IsContinuous() const { return m_continuous; }
     ShapeKind GetShapeKind() const { return m_kind; }
 
-    // --- Sleeping (SLEEP-1) --------------------------------------------------
-    // A body the engine has put to sleep is skipped by integration and the
-    // solver until woken (by contact with an awake body, WakeUp(), or an
-    // external velocity change). Only the engine ever sets a body asleep, and
-    // only when sleeping is enabled on it (PhysicsEngine::SetSleepingEnabled).
+    // --- Sleeping ------------------------------------------------------------
+    // A sleeping body is skipped by integration and the solver until woken (by
+    // contact with an awake body, WakeUp(), or an external velocity change).
+    // Only the engine sleeps a body, and only when sleeping is enabled.
     bool IsAwake() const { return m_awake; }
     void WakeUp() {
         m_awake = true;
@@ -124,7 +113,7 @@ class PhysicsObject {
     const Vector3f& GetAngularVelocity() const { return m_angularVelocity; }
     void SetAngularVelocity(const Vector3f& w) {
         m_angularVelocity = w;
-        WakeUp();  // external change wakes a sleeping body (SLEEP-1)
+        WakeUp();  // external change wakes a sleeping body
     }
 
     // Apply this body's inverse inertia tensor to a world-space vector (e.g. a
@@ -142,10 +131,9 @@ class PhysicsObject {
     float SupportRadius(const Vector3f& n) const;
 
    private:
-    // The engine owns the sleep/island bookkeeping (SLEEP-1: internal, not
-    // public API): it writes m_awake/m_sleepTime and — when applying solver
-    // impulses — m_velocity/m_angularVelocity directly, bypassing the waking
-    // public setters.
+    // The engine owns the sleep/island bookkeeping: it writes m_awake/
+    // m_sleepTime and, when applying solver impulses, m_velocity/
+    // m_angularVelocity directly, bypassing the waking public setters.
     friend class PhysicsEngine;
 
     // Fills m_invInertiaLocal from the shape, dimensions and inverse mass.
@@ -156,8 +144,8 @@ class PhysicsObject {
     Vector3f m_velocity{0, 0, 0};
     float m_invMass{1.0f};     // 0 => static/immovable
     float m_friction{0.0f};    // Coulomb coefficient, 0 = frictionless
-    float m_linearDamping{0.0f};   // DAMP-1: 1/s, 0 = no drag
-    float m_angularDamping{0.0f};  // DAMP-1: 1/s, 0 = no drag
+    float m_linearDamping{0.0f};   // 1/s, 0 = no drag
+    float m_angularDamping{0.0f};  // 1/s, 0 = no drag
     bool m_continuous{false};  // CCD opt-in (speculative contacts)
     bool m_awake{true};        // false = engine put this body to sleep
     float m_sleepTime{0.0f};   // seconds spent below sleep thresholds
