@@ -7,8 +7,8 @@
 
 using namespace Physics;
 
-// Impulse-based collision response: inverse mass, restitution, and positional
-// correction. Default restitution is 1.0 (elastic reflection).
+// Impulse based collision response: inverse mass, restitution, positional
+// correction. Default restitution is 1.0, an elastic reflection.
 
 // Restitution 0 is fully inelastic: the approaching normal velocity is removed.
 TEST(ResponseTest, RestitutionZeroStops) {
@@ -34,8 +34,8 @@ TEST(ResponseTest, RestitutionHalfBounce) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetY(), 2.5f, 1e-3f);
 }
 
-// Inverse mass matters: an infinite-mass (invMass 0) body acts like a wall —
-// it does not move, and the light body carries all the rebound.
+// An infinite mass body acts like a wall: it does not move and the light body
+// carries all the rebound.
 TEST(ResponseTest, InfiniteMassActsLikeWall) {
     PhysicsEngine engine;  // default restitution 1.0
     engine.AddObject(PhysicsObject::Sphere(
@@ -64,8 +64,8 @@ TEST(ResponseTest, PositionalCorrectionReducesPenetration) {
     EXPECT_LE(after, 1.0f + 1e-4f);  // but not overshot past resting height
 }
 
-// A ball dropped under gravity settles on the floor (comes to rest near its
-// radius above the plane) instead of sinking through or bouncing forever.
+// A ball dropped under gravity settles on the floor instead of sinking through
+// or bouncing forever.
 TEST(ResponseTest, BallSettlesOnFloorUnderGravity) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -9.81f, 0));
@@ -82,6 +82,6 @@ TEST(ResponseTest, BallSettlesOnFloorUnderGravity) {
     float y = engine.GetObject(0).GetPosition().GetY();
     float vy = engine.GetObject(0).GetVelocity().GetY();
     EXPECT_NEAR(y, 1.0f, 0.15f);     // resting ~radius above the plane
-    EXPECT_LT(std::fabs(vy), 0.5f);  // essentially at rest (not bouncing)
+    EXPECT_LT(std::fabs(vy), 0.5f);  // essentially at rest
     EXPECT_GT(y, 0.0f);              // did NOT sink through the floor
 }

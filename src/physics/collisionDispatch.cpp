@@ -19,9 +19,8 @@ constexpr float kEps = 1e-6f;
 // Center of an AABB.
 Vector3f aabbCenter(const AABB& a) { return (a.getMin() + a.getMax()) / 2; }
 
-// Outward unit normal of the box face nearest to an INTERIOR point p, used as
-// the contact normal when a sphere center sits inside an AABB. Picks the axis
-// with the smallest distance-to-face.
+// Outward normal of the box face nearest an interior point p. Used as the
+// contact normal when a sphere center sits inside an AABB.
 Vector3f nearestFaceNormal(const AABB& box, const Vector3f& p) {
     const Vector3f mn{box.getMin()};
     const Vector3f mx{box.getMax()};
@@ -41,12 +40,12 @@ Vector3f nearestFaceNormal(const AABB& box, const Vector3f& p) {
 template <>
 IntersectData Physics::collision<BoundingSphere, BoundingSphere>(
     const BoundingSphere& A, const BoundingSphere& B) {
-    Vector3f delta{B.getCenter() - A.getCenter()};  // A -> B
+    Vector3f delta{B.getCenter() - A.getCenter()};  // A toward B
     float dV{delta.Length()};
     float radius_distance{A.getRadius() + B.getRadius()};
 
     Vector3f normal{dV > kEps ? delta / dV : Vector3f(1, 0, 0)};
-    // Point on A's surface facing B — a good single-point contact estimate.
+    // Point on A's surface facing B.
     Vector3f contact{A.getCenter() + normal * A.getRadius()};
 
     // the = is when the two spheres are touching
@@ -63,9 +62,8 @@ IntersectData Physics::collision<AABB, AABB>(const AABB& A, const AABB& B) {
     bool hit{std::ranges::all_of(max.cbegin(), max.cend(),
                                  [&](const float& numb) { return numb <= 0; })};
 
-    // Minimum-penetration axis = the component of `max` closest to zero (the
-    // largest, since on a hit they are all <= 0). The contact normal lies along
-    // that axis, oriented from A's center toward B's center.
+    // Min-penetration axis = the component of max closest to zero. The normal
+    // lies along it, oriented from A's center toward B's center.
     int axis{0};
     for (int i = 1; i < 3; ++i)
         if (max[i] > max[axis]) axis = i;
@@ -75,8 +73,7 @@ IntersectData Physics::collision<AABB, AABB>(const AABB& A, const AABB& B) {
     Vector3f normal{0, 0, 0};
     normal[axis] = (bC[axis] - aC[axis]) >= 0 ? 1.0f : -1.0f;
 
-    // Contact point = center of the overlap region (defined even on a near
-    // miss, where it degenerates toward the gap midpoint).
+    // Contact point = center of the overlap region.
     Vector3f oMin(std::max(A.getMin().GetX(), B.getMin().GetX()),
                   std::max(A.getMin().GetY(), B.getMin().GetY()),
                   std::max(A.getMin().GetZ(), B.getMin().GetZ()));
@@ -99,13 +96,11 @@ IntersectData Physics::collision<AABB, BoundingSphere>(
     Vector3f diff{closest - B.getCenter()};
     float length{diff.Length()};
 
-    // Normal points from the box (A) toward the sphere (B). When the sphere
-    // center is inside the box the closest point coincides with it, so fall
-    // back to the nearest-face normal.
+    // Normal points from box toward sphere. If the sphere center is inside the
+    // box, fall back to the nearest-face normal.
     Vector3f normal{length > kEps ? (B.getCenter() - closest) / length
                                   : nearestFaceNormal(A, B.getCenter())};
 
-    // Condition for intersection
     return IntersectData(length <= B.getRadius(), length, normal, closest);
 }
 
@@ -113,7 +108,7 @@ template <>
 IntersectData Physics::collision<BoundingSphere, AABB>(const BoundingSphere& B,
                                                        const AABB& A) {
     IntersectData inter{Physics::collision(A, B)};
-    inter.m_normal = inter.m_normal * -1.0f;  // flip to sphere -> box
+    inter.m_normal = inter.m_normal * -1.0f;  // flip to point from sphere to box
     return inter;
 }
 
@@ -125,8 +120,8 @@ IntersectData Physics::collision<BoundingSphere, Plane>(const BoundingSphere& B,
                      normalized.getScaler()};
     float dist{std::abs(signedDist)};
 
-    // From the sphere (A) toward the plane (B): opposite the side the center is
-    // on. Contact = sphere center projected onto the plane.
+    // From sphere toward plane, opposite the side the center is on.
+    // Contact = sphere center projected onto the plane.
     Vector3f normal{normalized.getNorm() * (signedDist >= 0 ? -1.0f : 1.0f)};
     Vector3f contact{B.getCenter() - normalized.getNorm() * signedDist};
 
@@ -137,7 +132,7 @@ template <>
 IntersectData Physics::collision<Plane, BoundingSphere>(
     const Plane& P, const BoundingSphere& B) {
     IntersectData inter{collision(B, P)};
-    inter.m_normal = inter.m_normal * -1.0f;  // flip to plane -> sphere
+    inter.m_normal = inter.m_normal * -1.0f;  // flip to point from plane to sphere
     return inter;
 }
 
@@ -174,12 +169,10 @@ IntersectData Physics::collision<Plane, AABB>(const Plane& P, const AABB& A) {
     float signedDist{norm_norm.Dot(A_center) - normalized.getScaler()};
     float distance{std::abs(signedDist)};
 
-    // From the plane (A) toward the box (B): the side the box center is on.
+    // From plane toward box, the side the box center is on.
     Vector3f normal{norm_norm * (signedDist >= 0 ? 1.0f : -1.0f)};
-    // Contact point = the box's support point toward the plane (its most
-    // penetrating face/vertex), so the point sits on the box surface at the
-    // contact rather than at the box centroid. `toPlane` is the direction from
-    // the box into the plane (opposite the side the center is on).
+    // Contact = the box's support point toward the plane, so it sits on the box
+    // surface. toPlane points from the box into the plane.
     Vector3f toPlane{norm_norm * (signedDist >= 0 ? -1.0f : 1.0f)};
     Vector3f contact{aabbSupportPoint(A, toPlane)};
 
@@ -189,6 +182,6 @@ IntersectData Physics::collision<Plane, AABB>(const Plane& P, const AABB& A) {
 template <>
 IntersectData Physics::collision<AABB, Plane>(const AABB& A, const Plane& P) {
     IntersectData inter{collision(P, A)};
-    inter.m_normal = inter.m_normal * -1.0f;  // flip to box -> plane
+    inter.m_normal = inter.m_normal * -1.0f;  // flip to point from box to plane
     return inter;
 }

@@ -4,10 +4,9 @@
 #include "../core/entityComponent.h"
 #include "../physics/physicsEngine.h"
 
-// Copies a simulated body's position back onto its Entity's Transform each
-// frame, so the rendered entity follows the physics. The body is referenced by
-// (engine, index) rather than by pointer, so it survives the engine growing its
-// internal std::vector.
+// Copies a simulated body's position and orientation onto its Transform each
+// frame so rendering follows the physics. The body is referenced by engine and
+// index so it survives the engine's vector growing.
 class PhysicsObjectComponent : public EntityComponent {
    public:
     PhysicsObjectComponent(Physics::PhysicsEngine* engine, std::size_t index)
@@ -17,7 +16,7 @@ class PhysicsObjectComponent : public EntityComponent {
         (void)delta;
         const Physics::PhysicsObject& body = m_engine->GetObject(m_index);
         GetTransform()->SetPos(body.GetPosition());
-        GetTransform()->SetRot(body.GetOrientation());  // renders tumbling/spin
+        GetTransform()->SetRot(body.GetOrientation());  // renders tumbling and spin
     }
 
    private:

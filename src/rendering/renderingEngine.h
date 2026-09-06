@@ -54,9 +54,8 @@ public:
 	inline unsigned int GetSamplerSlot(const std::string& samplerName) const { return m_samplerMap.find(samplerName)->second; }
 	inline const Matrix4f& GetLightMatrix()                            const { return m_lightMatrix; }
 
-	// Scene-configurable window background. RGB in [0,1]; alpha stays 1.0.
-	// Drives the per-frame scene clear (renderingEngine.cpp). Default black
-	// preserves the original look until a scene sets it.
+	// Scene background colour, RGB in [0,1]. Drives the per-frame scene clear;
+	// default black preserves the original look.
 	inline void SetClearColor(const Vector3f& color)                         { m_clearColor = color; }
 	inline const Vector3f& GetClearColor()                             const { return m_clearColor; }
 protected:

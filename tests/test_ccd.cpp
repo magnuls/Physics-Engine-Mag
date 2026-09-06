@@ -7,17 +7,15 @@
 
 using namespace Physics;
 
-// Continuous collision detection via speculative contacts. Default off: nothing
-// changes unless a body opts in via SetContinuous(true) or the engine's
-// CcdSpeedThreshold is set.
+// Continuous collision detection via speculative contacts. Off by default,
+// enabled per body via SetContinuous or globally via CcdSpeedThreshold.
 
 namespace {
 
 constexpr float kDt = 1.0f / 60.0f;
 
-// A fast sphere (r=0.5) flying +x at 200 u/s (~3.33 u/step) toward a thin
-// static wall: an AABB slab 0.4 thick at x ~ 5. One integration step jumps
-// clean over it.
+// A fast sphere flying +x at 200 u/s toward a thin static wall at x ~ 5. One
+// step jumps clean over it.
 void buildTunnelScene(PhysicsEngine& engine) {
     engine.SetGravity(Vector3f(0, 0, 0));
     engine.AddObject(
@@ -36,8 +34,7 @@ void step(PhysicsEngine& engine, int n) {
 
 }  // namespace
 
-// Without CCD the sphere tunnels straight through the wall — ends up on the far
-// side with its velocity untouched.
+// Without CCD the sphere tunnels straight through the wall.
 TEST(CcdTest, FastSphereTunnelsWithoutCcd) {
     PhysicsEngine engine;
     buildTunnelScene(engine);
@@ -48,9 +45,8 @@ TEST(CcdTest, FastSphereTunnelsWithoutCcd) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 200.0f, 1e-3f);
 }
 
-// The same scene with SetContinuous(true) does not tunnel — the speculative
-// contact caps the approach at gap/dt, the sphere lands on the wall the next
-// step and the real contact rebounds it.
+// With SetContinuous the sphere does not tunnel; it lands on the wall and
+// rebounds.
 TEST(CcdTest, ContinuousSphereHitsThinWall) {
     PhysicsEngine engine;
     buildTunnelScene(engine);
@@ -64,8 +60,8 @@ TEST(CcdTest, ContinuousSphereHitsThinWall) {
     EXPECT_LT(engine.GetObject(0).GetVelocity().GetX(), 0.0f);  // rebounded
 }
 
-// With a speed threshold set (distance per step), fast bodies are auto-treated
-// as continuous without any per-body opt-in.
+// With a speed threshold set, fast bodies are treated as continuous with no
+// per body opt in.
 TEST(CcdTest, SpeedThresholdAutoCatchesFastBody) {
     PhysicsEngine engine;
     buildTunnelScene(engine);
@@ -77,8 +73,8 @@ TEST(CcdTest, SpeedThresholdAutoCatchesFastBody) {
     EXPECT_LT(engine.GetObject(0).GetVelocity().GetX(), 0.0f);   // rebounded
 }
 
-// A slow body stays below the threshold: its approach is NOT speculatively
-// braked — it flies untouched until it really contacts, exactly as before.
+// A slow body stays below the threshold and flies untouched until it really
+// contacts.
 TEST(CcdTest, SlowBodyUnaffectedByThreshold) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, 0, 0));
@@ -95,16 +91,12 @@ TEST(CcdTest, SlowBodyUnaffectedByThreshold) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 2.0f, 1e-4f);
 }
 
-// Energy-injection regression: a thrown continuous ball landing on a frictional
-// floor under gravity must never gain energy. The bug: warm-starting a
-// speculative contact re-applied the previous landing's cached friction
-// impulses with no speculative friction solve to correct them — a free
-// tangential kick at a long lever arm that pumped |v| ~20 -> ~90 and |w| -> ~300
-// (sign-reversing) across bounces.
+// A thrown continuous ball landing on a frictional floor must never gain energy
+// across bounces.
 TEST(CcdTest, ContinuousLandingInjectsNoEnergy) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -9.81f, 0));
-    engine.SetRestitution(0.3f);  // bouncy + frictional
+    engine.SetRestitution(0.3f);  // bouncy and frictional
     PhysicsObject ball = PhysicsObject::Sphere(Vector3f(0, 5, 0), 1.0f,
                                                Vector3f(20, -5, 0));  // thrown
     ball.SetFriction(0.5f);
@@ -113,9 +105,8 @@ TEST(CcdTest, ContinuousLandingInjectsNoEnergy) {
     engine.AddObject(
         PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.5f));
 
-    // Energy bound: |v| can never exceed sqrt(|v0|^2 + 2*g*h0) ~ 22.9 (all
-    // potential energy converted, nothing added). Friction bounds |w| by the
-    // cone; ~35 rad/s is generous. Check EVERY step, across many bounces.
+    // |v| can never exceed sqrt(|v0|^2 + 2*g*h0) ~ 22.9 and friction bounds |w|.
+    // Checked every step across many bounces.
     const float dt = 1.0f / 60.0f;
     for (int i = 0; i < 600; ++i) {
         engine.Simulate(dt);
@@ -123,13 +114,12 @@ TEST(CcdTest, ContinuousLandingInjectsNoEnergy) {
         EXPECT_LT(engine.GetObject(0).GetVelocity().Length(), 24.0f);
         EXPECT_LT(engine.GetObject(0).GetAngularVelocity().Length(), 35.0f);
     }
-    // And it ends up ON the floor, not launched into orbit.
+    // And it ends on the floor, not launched into orbit.
     EXPECT_LT(engine.GetObject(0).GetPosition().GetY(), 3.0f);
     EXPECT_GT(engine.GetObject(0).GetPosition().GetY(), 0.5f);
 }
 
-// CCD must not destabilize ordinary behavior — a continuous ball dropped under
-// gravity still settles on the floor like any other body.
+// A continuous ball dropped under gravity still settles on the floor normally.
 TEST(CcdTest, ContinuousBallStillSettlesOnFloor) {
     PhysicsEngine engine;
     engine.SetGravity(Vector3f(0, -9.81f, 0));

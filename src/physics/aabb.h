@@ -2,7 +2,7 @@
 #include "../core/math3d.h"
 #include "intersectData.h"
 
-// Axis Algined bounding box
+// Axis aligned bounding box.
 
 namespace Physics {
 class AABB {

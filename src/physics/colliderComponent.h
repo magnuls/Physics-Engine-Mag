@@ -1,16 +1,7 @@
 #pragma once
 
-// Collider components: wrap the standalone physics shapes
-// (Physics::BoundingSphere, Physics::AABB, Physics::Plane) as EntityComponents
-// so a collider is attached to an Entity and follows its Transform. Each
-// component stores the shape in the entity's LOCAL space and, on demand,
-// produces the corresponding WORLD-space shape by applying the entity's current
-// Transform (translation + rotation + scale + parent chain). This replaces the
-// old model where colliders were static value types that could not move with an
-// entity.
-//
-// The shape value types and the collision<>() math are reused unchanged; this
-// file only adds the entity/transform wiring on top of them.
+// Collider components wrap the physics shapes as EntityComponents so a collider
+// follows its entity's Transform, producing a world shape on demand.
 
 #include "../core/entityComponent.h"
 #include "../core/math3d.h"
@@ -39,7 +30,7 @@ class SphereCollider : public ColliderComponent {
 
     ColliderType getType() const override { return ColliderType::SPHERE; }
 
-    // World-space sphere for the entity's current Transform.
+    // World sphere for the entity's current Transform.
     BoundingSphere getWorldSphere() const;
 
    private:
@@ -47,15 +38,15 @@ class SphereCollider : public ColliderComponent {
     float m_localRadius;
 };
 
-// Axis-aligned box collider. Stays axis-aligned in world space: under entity
-// rotation the box is refit around its transformed corners.
+// Axis aligned box collider. Under entity rotation it refits around the
+// transformed corners.
 class AABBCollider : public ColliderComponent {
    public:
     AABBCollider(const Vector3f& localMin, const Vector3f& localMax);
 
     ColliderType getType() const override { return ColliderType::AABB; }
 
-    // World-space AABB for the entity's current Transform.
+    // World AABB for the entity's current Transform.
     AABB getWorldAABB() const;
 
    private:
@@ -63,14 +54,14 @@ class AABBCollider : public ColliderComponent {
     Vector3f m_localMax;
 };
 
-// Plane collider (Hesse form: unit normal + signed distance to origin).
+// Plane collider in Hesse form: unit normal plus signed distance to origin.
 class PlaneCollider : public ColliderComponent {
    public:
     PlaneCollider(const Vector3f& localNormal, float localScaler);
 
     ColliderType getType() const override { return ColliderType::PLANE; }
 
-    // World-space plane for the entity's current Transform.
+    // World plane for the entity's current Transform.
     Plane getWorldPlane() const;
 
    private:
@@ -78,10 +69,8 @@ class PlaneCollider : public ColliderComponent {
     float m_localScaler;
 };
 
-// Oriented-box collider. Unlike AABBCollider (which refits to stay
-// axis-aligned) this carries the entity's rotation into the shape, so a rotated
-// entity gets a true oriented box. Half-extents are along the box's own local
-// axes.
+// Oriented box collider. Carries the entity's rotation into the shape, so a
+// rotated entity gets a true oriented box.
 class OBBCollider : public ColliderComponent {
    public:
     OBBCollider(const Vector3f& localHalfExtents,
@@ -89,8 +78,7 @@ class OBBCollider : public ColliderComponent {
 
     ColliderType getType() const override { return ColliderType::OBB; }
 
-    // World-space OBB for the entity's current Transform (center from position,
-    // half-extents scaled, orientation from the entity's world rotation).
+    // World OBB for the entity's current Transform.
     OBB getWorldOBB() const;
 
    private:

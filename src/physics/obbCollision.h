@@ -5,13 +5,8 @@
 #include "obb.h"
 #include "plane.h"
 
-// OBB narrow-phase specializations of Physics::collision<>. The primary template
-// lives in collisionDispatch.h; these OBB overloads are defined in
-// obbCollision.cpp. Declared here so callers dispatching to collision<OBB, X>()
-// are well-formed.
-//
-// Normal convention (same as every other pair): m_normal points from the first
-// shape (A) toward the second (B), unit length on a hit.
+// OBB narrow-phase specializations of Physics::collision<>.
+// m_normal points from the first shape A toward the second B, unit on a hit.
 namespace Physics {
 
 template <>

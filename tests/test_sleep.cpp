@@ -5,8 +5,8 @@
 
 using namespace Physics;
 
-// Sleeping / islands. Master switch defaults off: with sleeping disabled
-// nothing changes anywhere.
+// Sleeping and islands. Master switch defaults off, so with sleeping disabled
+// nothing changes.
 
 namespace {
 
@@ -39,7 +39,7 @@ TEST(SleepTest, DisabledByDefaultNothingSleeps) {
     EXPECT_TRUE(engine.GetObject(0).IsAwake());
 }
 
-// Enabled, a settled body falls asleep (motion frozen, resting height kept).
+// Enabled, a settled body falls asleep with its resting height kept.
 TEST(SleepTest, SettledBodySleeps) {
     PhysicsEngine engine;
     engine.SetSleepingEnabled(true);
@@ -52,8 +52,7 @@ TEST(SleepTest, SettledBodySleeps) {
     EXPECT_NEAR(engine.GetObject(0).GetPosition().GetY(), 1.0f, 0.15f);
 }
 
-// A sleeping body under gravity does NOT sink or drift: its position is
-// bit-frozen while asleep (integration is skipped entirely).
+// A sleeping body under gravity does not sink or drift; integration is skipped.
 TEST(SleepTest, SleepingBodyDoesNotSink) {
     PhysicsEngine engine;
     engine.SetSleepingEnabled(true);
@@ -83,8 +82,7 @@ TEST(SleepTest, SetVelocityWakesAndBodyMoves) {
     EXPECT_GT(engine.GetObject(0).GetPosition().GetX(), 1.0f);  // rolling away
 }
 
-// A new collision wakes a sleeping body: a second ball dropped onto the
-// sleeper flips it awake on contact.
+// A new collision wakes a sleeping body.
 TEST(SleepTest, NewCollisionWakesSleepingBody) {
     PhysicsEngine engine;
     engine.SetSleepingEnabled(true);
@@ -95,15 +93,15 @@ TEST(SleepTest, NewCollisionWakesSleepingBody) {
     engine.AddObject(
         PhysicsObject::Sphere(Vector3f(0.5f, 6, 0), 1.0f));  // incoming
     bool wokeUp = false;
-    for (int i = 0; i < 120 && !wokeUp; ++i) {  // up to 2 s to fall + touch
+    for (int i = 0; i < 120 && !wokeUp; ++i) {  // up to 2 s to fall and touch
         step(engine, 1);
         wokeUp = engine.GetObject(0).IsAwake();
     }
     EXPECT_TRUE(wokeUp);
 }
 
-// Islands: two stacked boxes sleep together, and a thrown ball hitting the top
-// box wakes both (the wake propagates across the contact island).
+// Two stacked boxes sleep together, and a ball hitting the top box wakes both
+// via the contact island.
 TEST(SleepTest, IslandSleepsAndWakesTogether) {
     PhysicsEngine engine;
     engine.SetSleepingEnabled(true);

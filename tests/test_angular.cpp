@@ -7,7 +7,7 @@
 
 using namespace Physics;
 
-// Angular dynamics: bodies gain angular velocity from off-centre impulses and
+// Angular dynamics: bodies gain angular velocity from off centre impulses and
 // integrate their orientation over time.
 
 // Orientation advances by integrating a constant angular velocity.
@@ -26,9 +26,8 @@ TEST(AngularTest, OrientationIntegratesFromAngularVelocity) {
     EXPECT_NEAR(right.GetZ(), 0.0f, 0.02f);
 }
 
-// An impulse through the center of mass imparts NO spin; an off-centre one
-// does. (Contact point comes from collision<OBB,OBB>() = midpoint of the two
-// centers.)
+// An impulse through the center of mass imparts no spin; an off centre one
+// does.
 TEST(AngularTest, OffCenterCollisionInducesSpin) {
     // Centered: falling box directly above the static box -> lever arm parallel
     // to the normal -> no torque.
@@ -56,7 +55,7 @@ TEST(AngularTest, OffCenterCollisionInducesSpin) {
         engine.HandleCollisions();
         Vector3f w = engine.GetObject(0).GetAngularVelocity();
         EXPECT_GT(w.Length(), 0.5f);           // spin was induced
-        EXPECT_GT(std::fabs(w.GetZ()), 0.5f);  // about z (in-plane offset)
+        EXPECT_GT(std::fabs(w.GetZ()), 0.5f);  // about z from the in plane offset
     }
 }
 
@@ -73,8 +72,8 @@ TEST(AngularTest, StaticBodyStaysUnrotated) {
     EXPECT_NEAR(engine.GetObject(1).GetAngularVelocity().Length(), 0.0f, 1e-6f);
 }
 
-// A frictionless sphere hitting a plane head-on gets no spin (the contact lever
-// arm is parallel to the normal).
+// A frictionless sphere hitting a plane head on gets no spin; the contact lever
+// arm is parallel to the normal.
 TEST(AngularTest, SphereHeadOnNoSpin) {
     PhysicsEngine engine;
     engine.AddObject(

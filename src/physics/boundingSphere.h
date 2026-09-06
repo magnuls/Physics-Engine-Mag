@@ -4,7 +4,6 @@
 #include "../core/math3d.h"
 #include "intersectData.h"
 
-// representation of my object
 namespace Physics {
 class BoundingSphere {
    private:
@@ -14,7 +13,6 @@ class BoundingSphere {
    public:
     BoundingSphere(const Vector3f& center, const double& radius);
 
-    // member functions
     const Vector3f& getCenter() const;
     float getRadius() const;
 };

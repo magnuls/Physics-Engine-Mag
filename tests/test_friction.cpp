@@ -7,9 +7,8 @@
 
 using namespace Physics;
 
-// Friction + robust contact solver: Coulomb friction (tangent impulses clamped
-// to the friction cone), sequential-impulse iteration with warm starting, and
-// the support-point contacts that let boxes tip on corners.
+// Friction and contact solver: Coulomb friction, sequential impulse iteration
+// with warm starting, and support points that let boxes tip on corners.
 
 namespace {
 
@@ -29,8 +28,7 @@ PhysicsObject frictionFloor(float mu) {
 
 }  // namespace
 
-// Friction defaults to 0: a sliding body is NOT decelerated (the engine stays
-// physically neutral; scenes opt in).
+// Friction defaults to 0, so a sliding body is not decelerated.
 TEST(FrictionTest, DefaultZeroFrictionKeepsSliding) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -45,8 +43,8 @@ TEST(FrictionTest, DefaultZeroFrictionKeepsSliding) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 5.0f, 1e-3f);
 }
 
-// Coulomb friction decelerates a sliding box to rest: |dv/dt| = mu * g, so
-// with mu = 0.5 a 5 m/s slide stops after ~1.02 s — and STAYS stopped.
+// Coulomb friction decelerates a sliding box to rest at |dv/dt| = mu * g, so a
+// 5 m/s slide at mu = 0.5 stops after ~1 s and stays stopped.
 TEST(FrictionTest, SlidingBoxDeceleratesToRestAtMuG) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -62,7 +60,7 @@ TEST(FrictionTest, SlidingBoxDeceleratesToRestAtMuG) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 5.0f - 2.4525f,
                 0.15f);
 
-    // After 2 s total it is at rest — and friction never reverses the motion.
+    // After 2 s it is at rest, and friction never reverses the motion.
     for (int i = 0; i < 90; ++i) {
         engine.Simulate(dt);
         engine.HandleCollisions();
@@ -71,10 +69,8 @@ TEST(FrictionTest, SlidingBoxDeceleratesToRestAtMuG) {
     EXPECT_GE(engine.GetObject(0).GetVelocity().GetX(), -1e-3f);
 }
 
-// The friction impulse is clamped to the Coulomb cone |Jt| <= mu * Jn: a fast
-// slide with a gentle impact loses at most mu * (normal impulse) of tangent
-// momentum in that contact — it must NOT stop dead (that would need |Jt| >>
-// cone).
+// The friction impulse is clamped to the Coulomb cone |Jt| <= mu * Jn, so a
+// fast slide with a gentle impact loses only a little tangent speed, not all.
 TEST(FrictionTest, FrictionImpulseClampedToCoulombCone) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -89,14 +85,14 @@ TEST(FrictionTest, FrictionImpulseClampedToCoulombCone) {
 
     engine.HandleCollisions();
 
-    // Normal impulse stops vy (= 1.0 * m); friction may remove at most
-    // mu * Jn = 0.5 m/s of the 10 m/s slide.
+    // Normal impulse stops vy; friction removes at most mu * Jn = 0.5 m/s of
+    // the 10 m/s slide.
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetY(), 0.0f, 1e-3f);
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 9.5f, 1e-3f);
 }
 
-// Friction at the contact spins a sphere up until it ROLLS without slipping
-// (slip velocity v + w x r -> 0 at the contact), rather than stopping it.
+// Friction spins a sphere up until it rolls without slipping instead of
+// stopping it.
 TEST(FrictionTest, SphereSpinsUpToRolling) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -115,16 +111,14 @@ TEST(FrictionTest, SphereSpinsUpToRolling) {
     const PhysicsObject& b = engine.GetObject(0);
     float vx = b.GetVelocity().GetX();
     float wz = b.GetAngularVelocity().GetZ();
-    // Rolling without slipping on r=1: contact slip = vx + wz*r = 0, with
-    // backspin torque making wz negative for +x travel; sliding-to-rolling
-    // conserves angular momentum about the contact: vx -> 5 * 5/7 ~ 3.57.
+    // Rolling without slipping on r=1: slip = vx + wz*r = 0, wz goes negative,
+    // and vx settles to 5/7 of its start by conservation about the contact.
     EXPECT_LT(wz, -1.0f);
     EXPECT_NEAR(vx + wz, 0.0f, 0.1f);
     EXPECT_NEAR(vx, 5.0f * 5.0f / 7.0f, 0.2f);
 }
 
-// The sequential-impulse solver holds a two-box STACK: both boxes settle and
-// stay put (the mid-stack box satisfies its floor and its top contact at once).
+// The solver holds a two box stack: both boxes settle and stay put.
 TEST(FrictionTest, TwoBoxStackSettles) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -151,9 +145,8 @@ TEST(FrictionTest, TwoBoxStackSettles) {
     EXPECT_LT(std::fabs(engine.GetObject(1).GetVelocity().GetY()), 0.1f);
 }
 
-// Friction is a pair property combined as sqrt(muA*muB) — one frictionless side
-// zeroes the pair, so a frictional box on a frictionless floor slides freely.
-// Pinned here so the combine semantics can't drift silently.
+// Friction is a pair property combined as sqrt(muA*muB), so one frictionless
+// side zeroes the pair and the box slides freely.
 TEST(FrictionTest, OneSidedZeroFrictionSlidesFreely) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -168,8 +161,8 @@ TEST(FrictionTest, OneSidedZeroFrictionSlidesFreely) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 5.0f, 1e-3f);
 }
 
-// StaticPlane takes its friction at construction — the 2-arg form stays
-// frictionless, so existing call sites are unchanged.
+// StaticPlane can take friction at construction; the short form stays
+// frictionless.
 TEST(FrictionTest, StaticPlaneFrictionParam) {
     EXPECT_NEAR(
         PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.6f).GetFriction(),
@@ -179,8 +172,8 @@ TEST(FrictionTest, StaticPlaneFrictionParam) {
         1e-6f);
 }
 
-// A frictional floor (mu=0.6) vs a body (mu=0.5) -> pair sqrt(0.30)~0.55 brings
-// a 5 m/s slider to rest in ~1 s.
+// Floor mu=0.6 with body mu=0.5 gives pair ~0.55, bringing a 5 m/s slider to
+// rest in ~1 s.
 TEST(FrictionTest, FrictionalFloorStopsSliderDemoSpec) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -195,9 +188,8 @@ TEST(FrictionTest, FrictionalFloorStopsSliderDemoSpec) {
     EXPECT_NEAR(engine.GetObject(0).GetVelocity().GetX(), 0.0f, 0.05f);
 }
 
-// Support-point contacts: an OBB landing on the floor tilted contacts at its
-// corner, whose off-center lever arm produces torque — the box starts tipping.
-// (Center-projected contacts would give zero torque here.)
+// An OBB landing tilted contacts at a corner, whose off center lever arm makes
+// it start tipping.
 TEST(FrictionTest, TiltedObbLandingOnPlaneStartsTipping) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);

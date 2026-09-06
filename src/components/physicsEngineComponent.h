@@ -2,12 +2,8 @@
 #include "../core/entityComponent.h"
 #include "../physics/physicsEngine.h"
 
-// Drives a Physics::PhysicsEngine from the Entity/Component update loop. Attach
-// one to an Entity; every fixed step CoreEngine -> Game -> Entity calls Update,
-// which advances the simulation and resolves collisions.
-//
-// The engine is owned by value; GetPhysicsEngine() hands out a reference so the
-// game can add bodies during setup (and wire PhysicsObjectComponents to them).
+// Drives a Physics::PhysicsEngine from the component update loop; Update steps
+// the sim and resolves collisions. GetPhysicsEngine exposes it to add bodies.
 class PhysicsEngineComponent : public EntityComponent {
    public:
     PhysicsEngineComponent() {}

@@ -7,8 +7,8 @@
 
 using namespace Physics;
 
-// Extra checks for the friction + sequential-impulse solver: solver-safety
-// invariants and the warm-start / restitution interplay. Public API only.
+// Extra checks for the friction and sequential impulse solver. Safety
+// invariants plus warm start and restitution behavior. Public API only.
 
 namespace {
 
@@ -27,12 +27,11 @@ void step(PhysicsEngine& e, int n, float dt = 1.0f / 60.0f) {
 
 }  // namespace
 
-// Warm-start / restitution safety: the solver must never inject energy. An
-// elastic (e=1) ball bouncing on the floor must never rebound higher than it
-// started — stale warm-start impulses self-correct, they don't accumulate.
+// The solver must never inject energy. An elastic ball bouncing on the floor
+// must never rebound higher than it started.
 TEST(FrictionVerify, ElasticBounceNeverGainsEnergy) {
     PhysicsEngine engine;
-    engine.SetRestitution(1.0f);  // perfectly elastic — worst case for energy gain
+    engine.SetRestitution(1.0f);  // perfectly elastic, worst case for energy gain
     const float startY = 4.0f;
     engine.AddObject(PhysicsObject::Sphere(Vector3f(0, startY, 0), 1.0f));
     engine.AddObject(floorPlane(0.0f));
@@ -45,24 +44,22 @@ TEST(FrictionVerify, ElasticBounceNeverGainsEnergy) {
         engine.Simulate(dt);
         engine.HandleCollisions();
         float y = engine.GetObject(0).GetPosition().GetY();
-        if (y <= 1.05f) contacted = true;  // near the floor (center y ~ radius)
+        if (y <= 1.05f) contacted = true;  // near the floor
         maxY = std::max(maxY, y);
         if (contacted) maxYAfterContact = std::max(maxYAfterContact, y);
         ASSERT_FALSE(std::isnan(y)) << "position went NaN at step " << i;
     }
     // No energy gain: never rises meaningfully above where it began.
     EXPECT_LT(maxY, startY + 0.2f);
-    // But it did bounce back up substantially — rules out the trivial "it just
-    // stuck to the floor".
+    // But it did bounce back substantially, not just stick to the floor.
     EXPECT_GT(maxYAfterContact, 3.0f);
 }
 
-// Restitution threshold: approach speeds below 0.5 m/s are treated as e=0 to
-// kill endless micro-bouncing. A ball released just above the floor settles, a
-// fast one still bounces.
+// Approach speeds below 0.5 m/s are treated as e=0 to stop endless micro
+// bouncing. A ball just above the floor settles; a fast one still bounces.
 TEST(FrictionVerify, RestitutionThresholdSettlesSlowContacts) {
-    // Slow: dropped from ~2 cm up (impact << 0.5 m/s over the first steps) with
-    // full elasticity set — the threshold must still bring it to rest.
+    // Slow drop from ~2 cm up with full elasticity; the threshold still brings
+    // it to rest.
     PhysicsEngine slow;
     slow.SetRestitution(1.0f);
     slow.AddObject(PhysicsObject::Sphere(Vector3f(0, 1.02f, 0), 1.0f));
@@ -71,7 +68,7 @@ TEST(FrictionVerify, RestitutionThresholdSettlesSlowContacts) {
     EXPECT_NEAR(slow.GetObject(0).GetPosition().GetY(), 1.0f, 0.02f);
     EXPECT_LT(std::fabs(slow.GetObject(0).GetVelocity().GetY()), 0.05f);
 
-    // Fast: a real impact (>0.5 m/s) with e=1 must rebound upward.
+    // Fast impact above 0.5 m/s with e=1 rebounds upward.
     PhysicsEngine fast;
     fast.SetRestitution(1.0f);
     fast.SetGravity(Vector3f(0, 0, 0));  // isolate the bounce
@@ -82,8 +79,7 @@ TEST(FrictionVerify, RestitutionThresholdSettlesSlowContacts) {
     EXPECT_GT(fast.GetObject(0).GetVelocity().GetY(), 3.0f);  // ~+4 elastic
 }
 
-// A resting box neither sinks through the floor (penetration stays within the
-// solver's slop) nor creeps, over a long run.
+// A resting box neither sinks through the floor nor creeps over a long run.
 TEST(FrictionVerify, RestingBoxDoesNotSinkOrCreep) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -95,17 +91,16 @@ TEST(FrictionVerify, RestingBoxDoesNotSinkOrCreep) {
 
     step(engine, 300);  // let it settle
     float settled = engine.GetObject(0).GetPosition().GetY();
-    // Bottom face should sit at the floor: center y ~ 1, within slop (5 mm).
+    // Bottom face sits on the floor, center y ~ 1 within slop.
     EXPECT_NEAR(settled, 1.0f, 0.01f);
 
-    step(engine, 300);  // 5 s more — must not drift
+    step(engine, 300);  // 5 s more, must not drift
     float later = engine.GetObject(0).GetPosition().GetY();
     EXPECT_NEAR(later, settled, 1e-3f);  // no creep up or sink down
     EXPECT_LT(std::fabs(engine.GetObject(0).GetVelocity().GetY()), 1e-2f);
 }
 
-// Three boxes stress the solver's convergence more than two — all three settle
-// at their resting heights and stop moving.
+// Three boxes stress solver convergence more than two; all settle and stop.
 TEST(FrictionVerify, ThreeBoxStackSettles) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -127,13 +122,12 @@ TEST(FrictionVerify, ThreeBoxStackSettles) {
             << "box " << i << " still moving";
 }
 
-// A messy overlapping pile with friction and restitution stays bounded — no
-// NaN, no absurd velocities, nothing launched or tunnelled below the floor.
+// A messy overlapping pile stays bounded: no NaN, no launches, nothing below
+// the floor.
 TEST(FrictionVerify, OverlappingPileStaysBounded) {
     PhysicsEngine engine;
     engine.SetRestitution(0.3f);
-    // Deliberately overlapping spheres and boxes jammed together above the
-    // floor.
+    // Overlapping spheres jammed together above the floor.
     for (int k = 0; k < 5; ++k) {
         PhysicsObject s = PhysicsObject::Sphere(
             Vector3f(0.3f * k, 2.0f + 0.7f * k, 0.0f), 1.0f);
@@ -153,8 +147,7 @@ TEST(FrictionVerify, OverlappingPileStaysBounded) {
     }
 }
 
-// The solver (incl. the index-keyed warm-start cache) is deterministic —
-// identical setups produce bit-identical trajectories.
+// The solver is deterministic: identical setups give identical trajectories.
 TEST(FrictionVerify, SolverIsDeterministic) {
     auto build = [](PhysicsEngine& e) {
         e.SetRestitution(0.3f);

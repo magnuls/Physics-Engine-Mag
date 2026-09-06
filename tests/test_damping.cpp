@@ -5,15 +5,15 @@
 
 using namespace Physics;
 
-// Per-body linear/angular damping: v *= 1/(1 + d*dt) after the velocity update
-// in Integrate(). Defaults 0 keep every existing trajectory bit-identical.
+// Per body linear and angular damping: v *= 1/(1 + d*dt) after the velocity
+// update. Defaults 0 keep every existing trajectory identical.
 
 namespace {
 constexpr float kDt = 1.0f / 60.0f;
 }
 
-// A spun body's |w| decays exponentially: after 2 s at d=0.5 the per-step
-// product (1 + 0.5*dt)^-120 ~ e^-1 ~ 0.369 of the initial rate remains.
+// A spun body's |w| decays exponentially: after 2 s at d=0.5 about 0.37 of the
+// initial rate remains.
 TEST(DampingTest, SpunBodyAngularVelocityDecays) {
     PhysicsObject box = PhysicsObject::OrientedBox(
         Vector3f(0, 0, 0), Vector3f(1, 1, 1), Quaternion(0, 0, 0, 1));
@@ -36,8 +36,7 @@ TEST(DampingTest, LinearDampingDecaysVelocity) {
     EXPECT_NEAR(ball.GetVelocity().GetX(), 10.0f * 0.3694f, 0.1f);
 }
 
-// Default damping 0 is an EXACT no-op (multiply by 1/(1+0) == 1.0f), so every
-// pre-existing trajectory in the suite is bit-identical.
+// Default damping 0 is an exact no op, so existing trajectories are unchanged.
 TEST(DampingTest, ZeroDampingIsExactNoOp) {
     PhysicsObject ball =
         PhysicsObject::Sphere(Vector3f(0, 0, 0), 1.0f, Vector3f(5, 0, 0));
@@ -54,9 +53,8 @@ TEST(DampingTest, ZeroDampingIsExactNoOp) {
     EXPECT_EQ(box.GetAngularVelocity().GetZ(), 3.0f);
 }
 
-// A damped ball on a frictional floor spins up toward rolling, then bleeds
-// energy, comes to rest and — with sleeping enabled — falls asleep. Without
-// damping this exact setup rolls forever.
+// A damped ball on a frictional floor rolls, bleeds energy, comes to rest, and
+// with sleeping enabled falls asleep. Without damping it rolls forever.
 TEST(DampingTest, DampedRollerComesToRestAndSleeps) {
     PhysicsEngine engine;
     engine.SetRestitution(0.0f);
@@ -70,7 +68,7 @@ TEST(DampingTest, DampedRollerComesToRestAndSleeps) {
     engine.AddObject(
         PhysicsObject::StaticPlane(Vector3f(0, 1, 0), 0.0f, 0.5f));
 
-    for (int i = 0; i < 600; ++i) {  // 10 s — rest is reached in ~4 s
+    for (int i = 0; i < 600; ++i) {  // 10 s, rest is reached in ~4 s
         engine.Simulate(kDt);
         engine.HandleCollisions();
     }

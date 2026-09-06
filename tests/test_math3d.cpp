@@ -5,14 +5,12 @@
 #include "../src/core/math3d.h"
 #include "../src/core/transform.h"
 
-// Headless unit tests for the pure-CPU core math (no GL/SDL context needed):
-// Vector2f/Vector3f, Matrix4f, Quaternion, the Clamp/ToRadians/square helpers,
-// and the Transform scene-graph node. Rendering/core code that needs a live GL
-// context is intentionally out of scope.
+// Headless unit tests for the core math and Transform, no GL or SDL context
+// needed. Rendering code that needs a live GL context is out of scope.
 
 namespace {
-// Takes the base Vector<float,3> so it binds both Vector3f (derived) and the
-// raw Vector<float,3> that Matrix4f::Transform(Vector3f) returns.
+// Takes the base Vector<float,3> so it binds both Vector3f and the raw
+// Vector<float,3> that Matrix4f::Transform returns.
 void ExpectVec3(const Vector<float, 3>& v, float x, float y, float z,
                 float tol = 1e-4f) {
     EXPECT_NEAR(v[0], x, tol);
@@ -21,9 +19,7 @@ void ExpectVec3(const Vector<float, 3>& v, float x, float y, float z,
 }
 }  // namespace
 
-// ---------------------------------------------------------------------------
 // Vector3f
-// ---------------------------------------------------------------------------
 TEST(Math3D_Vector3f, DotCrossLength) {
     Vector3f a(1, 2, 3), b(4, 5, 6);
     EXPECT_NEAR(a.Dot(b), 32.0f, 1e-4f);  // 4 + 10 + 18
@@ -60,8 +56,8 @@ TEST(Math3D_Vector3f, Operators) {
 }
 
 TEST(Math3D_Vector3f, RotateAboutAxis) {
-    // Rotate (1,0,0) by 90 deg about +Z. (Engine uses a left-handed Rotate with
-    // sin(-angle); assert the magnitude/axis-plane behaviour it actually has.)
+    // Rotate 1,0,0 by 90 deg about +Z. The engine's Rotate is left handed with
+    // sin of negative angle, so assert the axis plane behaviour it actually has.
     Vector3f r = Vector3f(1, 0, 0).Rotate(ToRadians(90.0f), Vector3f(0, 0, 1));
     EXPECT_NEAR(r.Length(), 1.0f, 1e-4f);
     EXPECT_NEAR(r.GetZ(), 0.0f, 1e-4f);            // stays in the XY plane
@@ -69,9 +65,7 @@ TEST(Math3D_Vector3f, RotateAboutAxis) {
     EXPECT_NEAR(r.GetX(), 0.0f, 1e-4f);
 }
 
-// ---------------------------------------------------------------------------
 // Vector2f
-// ---------------------------------------------------------------------------
 TEST(Math3D_Vector2f, DotCross) {
     Vector2f a(1, 2), b(3, 4);
     EXPECT_NEAR(a.Dot(b), 11.0f, 1e-4f);  // 3 + 8
@@ -79,9 +73,7 @@ TEST(Math3D_Vector2f, DotCross) {
     EXPECT_NEAR(Vector2f(0, 1).Cross(Vector2f(1, 0)), -1.0f, 1e-4f);
 }
 
-// ---------------------------------------------------------------------------
 // Helpers: Clamp / ToRadians / ToDegrees / square
-// ---------------------------------------------------------------------------
 TEST(Math3D_Helpers, ClampRadiansSquare) {
     EXPECT_EQ(Clamp(5, 0, 3), 3);
     EXPECT_EQ(Clamp(-1, 0, 3), 0);
@@ -94,13 +86,11 @@ TEST(Math3D_Helpers, ClampRadiansSquare) {
     EXPECT_NEAR(square(1.5f), 2.25f, 1e-5f);
 }
 
-// ---------------------------------------------------------------------------
 // Matrix4f
-// ---------------------------------------------------------------------------
 TEST(Math3D_Matrix4f, IdentityTransform) {
     Matrix4f id;
     id.InitIdentity();
-    // Transform of a 3-vector via the D-1 overload leaves it unchanged.
+    // Identity leaves the 3 vector unchanged.
     auto p = id.Transform(Vector3f(1, 2, 3));
     ExpectVec3(p, 1, 2, 3);
 }
@@ -124,9 +114,7 @@ TEST(Math3D_Matrix4f, IdentityIsMultiplicativeUnit) {
     ExpectVec3((t * id).Transform(Vector3f(0, 0, 0)), 5, -2, 7);
 }
 
-// ---------------------------------------------------------------------------
 // Quaternion
-// ---------------------------------------------------------------------------
 TEST(Math3D_Quaternion, Conjugate) {
     Quaternion q(1, 2, 3, 4);
     Quaternion c = q.Conjugate();
@@ -146,7 +134,7 @@ TEST(Math3D_Quaternion, HamiltonProduct_IJequalsK) {
 }
 
 TEST(Math3D_Quaternion, AxisAngleConstruction) {
-    // 180 deg about +Z -> (0,0,sin(90),cos(90)) = (0,0,1,0).
+    // 180 deg about +Z gives 0,0,sin(90),cos(90) = 0,0,1,0.
     Quaternion q(Vector3f(0, 0, 1), ToRadians(180.0f));
     EXPECT_NEAR(q.GetX(), 0.0f, 1e-4f);
     EXPECT_NEAR(q.GetY(), 0.0f, 1e-4f);
@@ -155,24 +143,22 @@ TEST(Math3D_Quaternion, AxisAngleConstruction) {
 }
 
 TEST(Math3D_Quaternion, IdentityBasisVectors) {
-    Quaternion idq;  // (0,0,0,1)
+    Quaternion idq;  // identity 0,0,0,1
     ExpectVec3(idq.GetForward(), 0, 0, 1);
     ExpectVec3(idq.GetUp(), 0, 1, 0);
     ExpectVec3(idq.GetRight(), 1, 0, 0);
 }
 
-// ---------------------------------------------------------------------------
-// Transform (scene-graph node) — headless, no rendering
-// ---------------------------------------------------------------------------
+// Transform scene graph node, headless, no rendering
 TEST(Transform, DefaultsAndSetters) {
     Transform tr;
-    // Non-const GetPos() returns Vector3f* (the const overload returns a ref).
+    // Non const GetPos returns Vector3f*, the const overload returns a ref.
     ExpectVec3(*tr.GetPos(), 0, 0, 0);
     EXPECT_NEAR(tr.GetScale(), 1.0f, 1e-4f);
 
     tr.SetPos(Vector3f(4, 5, 6));
     ExpectVec3(*tr.GetPos(), 4, 5, 6);
-    // No parent -> transformed pos equals local pos (identity parent matrix).
+    // No parent, so transformed pos equals local pos under the identity parent.
     ExpectVec3(tr.GetTransformedPos(), 4, 5, 6);
 }
 
