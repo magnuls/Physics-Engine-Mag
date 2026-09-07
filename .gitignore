@@ -220,19 +220,5 @@ pip-log.txt
 compile_commands.json
 .cache/
 
-#############
-## Claude / AI-agent files — internal coordination, NEVER ship these
-#############
-# Everything Claude-related: the multi-agent coordination board, the interface
-# catalog, and any Claude Code config/plans/memory. Process artifacts, not the
-# engine. NOTE: README.md is a real project doc — keep it tracked; do NOT add it here.
-CLAUDE.md
-CLAUDE.local.md
-**/CLAUDE.md
-API-REFERENCE.md
-.claude/
-.claude*
-*.claude
-
 # Leftover source texture (unused; converted to res/textures/metal.jpg)
 *.avif
