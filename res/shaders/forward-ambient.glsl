@@ -58,6 +58,9 @@ void main()
 {
 	vec3 directionToEye = normalize(C_eyePos - worldPos0);
 	vec2 texCoords = CalcParallaxTexCoords(dispMap, tbnMatrix, directionToEye, texCoord0, dispMapScale, dispMapBias);
-	SetFragOutput(0, texture2D(diffuse, texCoords) * vec4(R_ambient, 1));
+	vec4 diffuseColor = texture2D(diffuse, texCoords);
+	if(diffuseColor.a < 0.5)
+		discard;
+	SetFragOutput(0, diffuseColor * vec4(R_ambient, 1));
 }
 #endif

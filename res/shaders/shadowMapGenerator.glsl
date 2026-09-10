@@ -16,19 +16,28 @@
 
 #include "common.glh"
 
+varying vec2 texCoord0;
+
 #if defined(VS_BUILD)
 attribute vec3 position;
+attribute vec2 texCoord;
 
 uniform mat4 T_MVP;
 
 void main()
 {
     gl_Position = T_MVP * vec4(position, 1.0);
+    texCoord0 = texCoord;
 }
 #elif defined(FS_BUILD)
+uniform sampler2D diffuse;
+
 DeclareFragOutput(0, vec4);
 void main()
 {
+	if(texture2D(diffuse, texCoord0).a < 0.5)
+		discard;
+
 	float depth = gl_FragCoord.z;
 
 	float dx = dFdx(depth);
